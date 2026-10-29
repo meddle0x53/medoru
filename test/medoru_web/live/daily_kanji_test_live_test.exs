@@ -193,6 +193,54 @@ defmodule MedoruWeb.DailyKanjiTestLiveTest do
       assert html =~ "てすと"
     end
 
+    test "shows an assigned example word instead of the frequency-based pick", %{
+      conn: conn,
+      kanji_list: kanji_list
+    } do
+      Enum.each(kanji_list, fn kanji ->
+        reading =
+          kanji_reading_fixture(kanji.id, %{
+            reading_type: :on,
+            reading: "テスト",
+            romaji: "tesuto"
+          })
+
+        {:ok, _frequent} =
+          Medoru.Content.create_word_with_kanji(
+            %{
+              text: kanji.character <> <<0x3901::utf8>>,
+              reading: "ひんと",
+              meaning: "frequent word meaning",
+              difficulty: 5,
+              usage_frequency: 10,
+              word_type: :noun
+            },
+            [%{position: 0, kanji_id: kanji.id, kanji_reading_id: reading.id}]
+          )
+
+        {:ok, assigned} =
+          Medoru.Content.create_word_with_kanji(
+            %{
+              text: kanji.character <> <<0x3902::utf8>>,
+              reading: "れい",
+              meaning: "assigned word meaning",
+              difficulty: 5,
+              usage_frequency: 9999,
+              word_type: :noun
+            },
+            [%{position: 0, kanji_id: kanji.id, kanji_reading_id: reading.id}]
+          )
+
+        {:ok, _} = Medoru.Content.set_example_words_for_kanji(kanji.id, [assigned.id])
+      end)
+
+      {:ok, _view, html} = live(conn, ~p"/daily-challenges/kanji")
+
+      assert html =~ "assigned word meaning"
+      assert html =~ "れい"
+      refute html =~ "frequent word meaning"
+    end
+
     test "known_score decreases but not below 1 on incorrect kanji", %{conn: conn, user: user} do
       {:ok, view, html} = live(conn, ~p"/daily-challenges/kanji")
 

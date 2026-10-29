@@ -203,6 +203,63 @@ defmodule Medoru.Learning.DailyTestGeneratorTest do
       assert {:error, :no_items_available} = DailyTestGenerator.generate_daily_test(new_user.id)
     end
 
+    test "kanji writing hint uses admin-assigned example word when present" do
+      user = user_fixture_with_profile()
+      lesson = lesson_fixture()
+
+      kanji =
+        kanji_fixture(%{
+          stroke_data: %{"strokes" => ["M0,0 L10,10"]}
+        })
+
+      reading =
+        kanji_reading_fixture(kanji.id, %{
+          reading_type: :on,
+          reading: "テスト",
+          romaji: "tesuto"
+        })
+
+      {:ok, frequent} =
+        Medoru.Content.create_word_with_kanji(
+          %{
+            text: kanji.character <> <<0x3901::utf8>>,
+            meaning: "frequent meaning",
+            reading: "ひんと",
+            difficulty: 5,
+            usage_frequency: 10,
+            word_type: :noun
+          },
+          [%{position: 0, kanji_id: kanji.id, kanji_reading_id: reading.id}]
+        )
+
+      {:ok, assigned} =
+        Medoru.Content.create_word_with_kanji(
+          %{
+            text: kanji.character <> <<0x3902::utf8>>,
+            meaning: "assigned meaning",
+            reading: "れい",
+            difficulty: 5,
+            usage_frequency: 9999,
+            word_type: :noun
+          },
+          [%{position: 0, kanji_id: kanji.id, kanji_reading_id: reading.id}]
+        )
+
+      lesson_word_fixture(lesson, frequent, position: 0)
+      {:ok, _} = Learning.start_lesson(user.id, lesson.id)
+      {:ok, _} = Learning.complete_lesson(user.id, lesson.id)
+      {:ok, _} = Learning.track_word_learned(user.id, frequent.id)
+      {:ok, _} = Medoru.Content.set_example_words_for_kanji(kanji.id, [assigned.id])
+      {:ok, _} = Medoru.Accounts.update_user_daily_test_preferences(user.id, ["kanji_writing"])
+
+      assert {:ok, test} = DailyTestGenerator.generate_daily_test(user.id)
+
+      step = Enum.find(test.test_steps, &(&1.question_type == :writing))
+      assert step
+      assert step.question_data["hint_word_reading"] == "れい"
+      assert step.question_data["hint_word_meaning"] == "assigned meaning"
+    end
+
     test "new user can review all learned words regardless of lesson completion" do
       # Create a new user
       user = user_fixture()

@@ -7363,6 +7363,16 @@ msgstr ""
 msgid "Show a Japanese word and select the hiragana reading"
 msgstr ""
 
+#: lib/medoru_web/live/word_set_live/test_config.ex:37
+#, elixir-autogen, elixir-format
+msgid "Show a Japanese word and type the English meaning"
+msgstr ""
+
+#: lib/medoru_web/live/word_set_live/test_config.ex:43
+#, elixir-autogen, elixir-format
+msgid "Show a Japanese word and type the hiragana reading"
+msgstr ""
+
 #: lib/medoru_web/live/learned_words_live/index.html.heex:134
 #, elixir-autogen, elixir-format
 msgid "Start learning by completing lessons or browsing vocabulary."
@@ -7390,6 +7400,16 @@ msgstr ""
 #: lib/medoru_web/live/word_set_live/test_config.ex:28
 #, elixir-autogen, elixir-format
 msgid "Type both the English meaning and hiragana reading"
+msgstr ""
+
+#: lib/medoru_web/live/word_set_live/test_config.ex:36
+#, elixir-autogen, elixir-format
+msgid "Type Meaning Only"
+msgstr ""
+
+#: lib/medoru_web/live/word_set_live/test_config.ex:42
+#, elixir-autogen, elixir-format
+msgid "Type Reading Only"
 msgstr ""
 
 #: lib/medoru_web/live/teacher/test_live/edit.ex:2938
@@ -11417,6 +11437,12 @@ msgstr ""
 msgid "Type the reading of the falling kanji before it reaches the danger line!"
 msgstr ""
 
+#: lib/medoru_web/live/lesson_test_live/reading_text_component.ex:61
+#: lib/medoru_web/live/word_set_live/test.html.heex:220
+#, elixir-autogen, elixir-format
+msgid "Type the reading:"
+msgstr ""
+
 #: lib/medoru_web/live/kana_falling_game_live/play.html.heex:400
 #: lib/medoru_web/live/kana_falling_game_live/play.html.heex:400
 #: lib/medoru_web/live/kanji_falling_game_live/play.html.heex:514
@@ -14008,6 +14034,11 @@ msgstr ""
 msgid "Meaning: %{meaning_hint}..."
 msgstr ""
 
+#: lib/medoru_web/live/lesson_test_live/reading_text_component.ex
+#, elixir-autogen, elixir-format
+msgid "Reading: %{reading_hint}..."
+msgstr ""
+
 #: lib/medoru_web/live/user_white_board_live.ex:88
 #, elixir-autogen, elixir-format
 msgid "Medium grid"
@@ -16275,6 +16306,12 @@ msgstr ""
 #: lib/medoru_web/live/daily_test_live.ex:796
 #, elixir-autogen, elixir-format
 msgid "Enter the Japanese word or its reading"
+msgstr ""
+
+#: lib/medoru_web/live/lesson_test_live/reading_text_component.ex:139
+#: lib/medoru_web/live/word_set_live/test.html.heex:245
+#, elixir-autogen, elixir-format
+msgid "Enter the hiragana reading"
 msgstr ""
 
 #: lib/medoru_web/live/daily_test_live/daily_test_live.html.heex:199

@@ -31,6 +31,18 @@ defmodule MedoruWeb.WordSetLive.TestConfig do
       description: "Type both the English meaning and hiragana reading"
     },
     %{
+      id: "meaning_only",
+      icon: "hero-pencil-square",
+      label: "Type Meaning Only",
+      description: "Show a Japanese word and type the English meaning"
+    },
+    %{
+      id: "reading_only",
+      icon: "hero-language",
+      label: "Type Reading Only",
+      description: "Show a Japanese word and type the hiragana reading"
+    },
+    %{
       id: "image_to_meaning",
       icon: "hero-photo",
       label: "Image to Meaning",

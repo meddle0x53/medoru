@@ -18,6 +18,7 @@ defmodule Medoru.Learning.DailyTestGenerator do
   alias Medoru.Tests
   alias Medoru.Tests.Test
   alias Medoru.Content.Word
+  alias Medoru.Content.WordKanji
 
   # Daily test configuration
   # Base daily goal - will scale with user's learned words
@@ -356,6 +357,20 @@ defmodule Medoru.Learning.DailyTestGenerator do
     review_items ++ new_items
   end
 
+  # Fetch admin-assigned example words for every kanji appearing in the test
+  # items (one query for the whole batch, not per kanji).
+  defp assigned_example_words_for_items(test_items) do
+    word_ids = Enum.map(test_items, & &1.word.id)
+
+    kanji_ids =
+      WordKanji
+      |> where([wk], wk.word_id in ^word_ids)
+      |> select([wk], wk.kanji_id)
+      |> Repo.all()
+
+    Medoru.Content.example_word_map_for_kanji_ids(kanji_ids)
+  end
+
   # Create the daily test with steps
   defp create_daily_test(user_id, test_items) do
     # Validate test_items is not empty
@@ -368,10 +383,13 @@ defmodule Medoru.Learning.DailyTestGenerator do
       # Get user preferences for daily test step types
       user_step_types = get_user_step_types(user_id)
 
+      # Admin-assigned example words for all kanji in this batch (one query)
+      assigned_words = assigned_example_words_for_items(test_items)
+
       # Pre-validate that steps will be generated
       steps_count =
         test_items
-        |> Enum.flat_map(&build_word_steps(&1, user_step_types, user_id))
+        |> Enum.flat_map(&build_word_steps(&1, user_step_types, user_id, assigned_words))
         |> Enum.shuffle()
         |> length()
 
@@ -393,7 +411,8 @@ defmodule Medoru.Learning.DailyTestGenerator do
         }
 
         with {:ok, test} <- Tests.create_test(test_attrs),
-             {:ok, _steps} <- create_test_steps(test, test_items, user_step_types, user_id),
+             {:ok, _steps} <-
+               create_test_steps(test, test_items, user_step_types, user_id, assigned_words),
              {:ok, ready_test} <- Tests.ready_test(test) do
           # Preload test_steps before returning
           {:ok, Repo.preload(ready_test, :test_steps)}
@@ -648,10 +667,10 @@ defmodule Medoru.Learning.DailyTestGenerator do
   end
 
   # Create test steps for all test items
-  defp create_test_steps(test, test_items, user_step_types, user_id) do
+  defp create_test_steps(test, test_items, user_step_types, user_id, assigned_words) do
     steps =
       test_items
-      |> Enum.flat_map(&build_word_steps(&1, user_step_types, user_id))
+      |> Enum.flat_map(&build_word_steps(&1, user_step_types, user_id, assigned_words))
       # Shuffle to avoid having all questions for the same word consecutively
       |> Enum.shuffle()
       |> Enum.with_index(fn step, index -> Map.put(step, :order_index, index) end)
@@ -666,7 +685,12 @@ defmodule Medoru.Learning.DailyTestGenerator do
 
   # Build steps for a single word (mix of multichoice and reading_text)
   # Uses user preferences if available, otherwise random variety
-  defp build_word_steps(%{word: word, is_new: is_new}, user_step_types, user_id) do
+  defp build_word_steps(
+         %{word: word, is_new: is_new},
+         user_step_types,
+         user_id,
+         assigned_words
+       ) do
     base_attrs = %{
       word_id: word.id,
       step_type: :vocabulary,
@@ -771,7 +795,7 @@ defmodule Medoru.Learning.DailyTestGenerator do
 
       "kanji_writing" ->
         # Try to build a writing step from the word's kanji
-        case build_writing_step_for_word(word, user_id) do
+        case build_writing_step_for_word(word, user_id, assigned_words) do
           {:ok, step_attrs} ->
             Map.merge(base_attrs, step_attrs)
 
@@ -814,7 +838,7 @@ defmodule Medoru.Learning.DailyTestGenerator do
   end
 
   # Build a writing step for a word using its first kanji
-  defp build_writing_step_for_word(word, user_id) do
+  defp build_writing_step_for_word(word, user_id, assigned_words) do
     # Ensure word_kanjis is loaded
     word_with_kanji =
       case word.word_kanjis do
@@ -839,8 +863,11 @@ defmodule Medoru.Learning.DailyTestGenerator do
       kanji ->
         meanings = Enum.join(kanji.meanings || [], ", ")
 
-        # Most frequent word with this kanji that the user knows (DB-wide fallback)
-        hint_word = Medoru.Learning.most_frequent_word_for_kanji(user_id, kanji.id)
+        # Admin-assigned example words take precedence over the frequency-based
+        # pick (user-known word first, DB-wide fallback)
+        hint_word =
+          Map.get(assigned_words, kanji.id) ||
+            Medoru.Learning.most_frequent_word_for_kanji(user_id, kanji.id)
 
         # Extract stroke paths from kanji.stroke_data
         strokes =

@@ -122,6 +122,7 @@ defmodule MedoruWeb.Router do
       live "/challenges/kanji-master", KanjiMasterLive, :master
       live "/challenges/kanji-master/n5", KanjiMasterLive, :n5
       live "/challenges/kanji-master/n4", KanjiMasterLive, :n4
+      live "/challenges/kanji-master/n3", KanjiMasterLive, :n3
       live "/attribution", SettingsLive.Attribution
       live "/privacy", PrivacyLive
       live "/cookies", CookiesLive

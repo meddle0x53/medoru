@@ -95,8 +95,9 @@ defmodule MedoruWeb.WordSetLive.Test do
     value = Map.get(params, "meaning_answer", params["value"] || "")
     socket = assign(socket, :meaning_answer, value)
 
-    # For kana-only words the meaning field is the only one, so Enter submits
-    if socket.assigns.current_step.question_data["is_kana_only"] do
+    # Submit when the meaning field is the only one (kana-only "both" steps
+    # or single-field meaning_only steps)
+    if single_field_mode?(socket.assigns.current_step, "meaning") do
       handle_event("submit_reading_text", params, socket)
     else
       {:noreply, socket}
@@ -153,61 +154,24 @@ defmodule MedoruWeb.WordSetLive.Test do
   @impl true
   def handle_event("submit_reading_text", _params, socket) do
     step = socket.assigns.current_step
-    is_kana_only = step.question_data["is_kana_only"] || false
+    question_data = step.question_data || %{}
+    is_kana_only = question_data["is_kana_only"] || false
+    text_mode = question_data["text_mode"] || "both"
     meaning = String.trim(socket.assigns.meaning_answer)
     reading = String.trim(socket.assigns.reading_answer)
 
-    if meaning == "" or (not is_kana_only and reading == "") do
-      {:noreply, put_flash(socket, :error, gettext("Please enter both meaning and reading"))}
-    else
-      session = socket.assigns.session
+    cond do
+      text_mode == "meaning" ->
+        submit_single_text(socket, step, meaning, :meaning)
 
-      # Get the word for validation
-      word =
-        if step.word_id do
-          Content.get_word!(step.word_id)
-        else
-          nil
-        end
+      text_mode == "reading" ->
+        submit_single_text(socket, step, reading, :reading)
 
-      if word do
-        locale = socket.assigns.locale
+      meaning == "" or (not is_kana_only and reading == "") ->
+        {:noreply, put_flash(socket, :error, gettext("Please enter both meaning and reading"))}
 
-        {:ok, validation} =
-          Medoru.Tests.ReadingAnswerValidator.validate_answer(
-            word,
-            meaning,
-            reading,
-            locale,
-            skip_reading: is_kana_only
-          )
-
-        # Record the answer
-        answer_text =
-          Jason.encode!(%{
-            meaning: meaning,
-            reading: reading,
-            validation: validation
-          })
-
-        attrs = %{
-          answer: answer_text,
-          time_spent_seconds: 15,
-          step_index: session.current_step_index,
-          is_correct: validation.both_correct
-        }
-
-        case Tests.record_step_answer(session.id, step.id, attrs) do
-          {:ok, _step_answer} ->
-            feedback = if validation.both_correct, do: :correct, else: :incorrect
-            {:noreply, assign(socket, :feedback, feedback)}
-
-          {:error, _reason} ->
-            {:noreply, put_flash(socket, :error, gettext("Error recording answer"))}
-        end
-      else
-        {:noreply, put_flash(socket, :error, gettext("Error: word not found"))}
-      end
+      true ->
+        submit_reading_text_dual(socket, step, is_kana_only, meaning, reading)
     end
   end
 
@@ -330,6 +294,125 @@ defmodule MedoruWeb.WordSetLive.Test do
     end
   end
 
+  defp submit_single_text(socket, step, answer, field) do
+    if answer == "" do
+      {:noreply, put_flash(socket, :error, gettext("Please enter an answer"))}
+    else
+      session = socket.assigns.session
+
+      word =
+        if step.word_id do
+          Content.get_word!(step.word_id)
+        else
+          nil
+        end
+
+      if word do
+        locale = socket.assigns.locale
+
+        is_correct =
+          case field do
+            :meaning ->
+              {:ok, validation} =
+                Medoru.Tests.ReadingAnswerValidator.validate_answer(
+                  word,
+                  answer,
+                  "",
+                  locale,
+                  skip_reading: true
+                )
+
+              validation.meaning_correct
+
+            :reading ->
+              Medoru.Tests.ReadingAnswerValidator.validate_reading(word.reading, answer)
+          end
+
+        answer_text =
+          Jason.encode!(%{"#{field}" => answer, validation: %{field_correct: is_correct}})
+
+        attrs = %{
+          answer: answer_text,
+          time_spent_seconds: 15,
+          step_index: session.current_step_index,
+          is_correct: is_correct
+        }
+
+        case Tests.record_step_answer(session.id, step.id, attrs) do
+          {:ok, _step_answer} ->
+            feedback = if is_correct, do: :correct, else: :incorrect
+            {:noreply, assign(socket, :feedback, feedback)}
+
+          {:error, _reason} ->
+            {:noreply, put_flash(socket, :error, gettext("Error recording answer"))}
+        end
+      else
+        {:noreply, put_flash(socket, :error, gettext("Error: word not found"))}
+      end
+    end
+  end
+
+  defp submit_reading_text_dual(socket, step, is_kana_only, meaning, reading) do
+    session = socket.assigns.session
+
+    # Get the word for validation
+    word =
+      if step.word_id do
+        Content.get_word!(step.word_id)
+      else
+        nil
+      end
+
+    if word do
+      locale = socket.assigns.locale
+
+      {:ok, validation} =
+        Medoru.Tests.ReadingAnswerValidator.validate_answer(
+          word,
+          meaning,
+          reading,
+          locale,
+          skip_reading: is_kana_only
+        )
+
+      # Record the answer
+      answer_text =
+        Jason.encode!(%{
+          meaning: meaning,
+          reading: reading,
+          validation: validation
+        })
+
+      attrs = %{
+        answer: answer_text,
+        time_spent_seconds: 15,
+        step_index: session.current_step_index,
+        is_correct: validation.both_correct
+      }
+
+      case Tests.record_step_answer(session.id, step.id, attrs) do
+        {:ok, _step_answer} ->
+          feedback = if validation.both_correct, do: :correct, else: :incorrect
+          {:noreply, assign(socket, :feedback, feedback)}
+
+        {:error, _reason} ->
+          {:noreply, put_flash(socket, :error, gettext("Error recording answer"))}
+      end
+    else
+      {:noreply, put_flash(socket, :error, gettext("Error: word not found"))}
+    end
+  end
+
+  # True when the current step only asks for the given field: either a
+  # single-field text_mode step (`meaning_only`/`reading_only`) or the
+  # meaning-only variant of kana-only dual steps.
+  defp single_field_mode?(step, "meaning") do
+    question_data = step.question_data || %{}
+    question_data["text_mode"] == "meaning" or question_data["is_kana_only"] == true
+  end
+
+  defp single_field_mode?(_step, _field), do: false
+
   # Marks the session complete and builds the results view data (stats +
   # mistakes review) from the recorded answers.
   defp complete_test(socket, session) do
@@ -413,6 +496,17 @@ defmodule MedoruWeb.WordSetLive.Test do
   # string (empty when the question was skipped).
   defp parse_stored_answer(answer) when is_binary(answer) do
     case Jason.decode(answer) do
+      {:ok, %{"validation" => %{"field" => field}} = decoded}
+      when field in ["meaning", "reading"] ->
+        # Single-field (meaning_only / reading_only) step
+        %{
+          "raw" => decoded[field],
+          "meaning" => decoded["meaning"],
+          "reading" => decoded["reading"],
+          "meaning_correct" => nil,
+          "reading_correct" => nil
+        }
+
       {:ok, %{"meaning" => _} = decoded} ->
         validation = decoded["validation"] || %{}
 

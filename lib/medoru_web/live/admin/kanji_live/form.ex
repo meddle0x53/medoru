@@ -31,7 +31,10 @@ defmodule MedoruWeb.Admin.KanjiLive.Form do
      |> assign(:enrich_loading, false)
      |> assign(:enrich_error, nil)
      |> assign(:enrich_prompt, "")
-     |> assign(:suggested_readings, [])}
+     |> assign(:suggested_readings, [])
+     |> assign(:example_words, [])
+     |> assign(:example_word_search, "")
+     |> assign(:example_word_results, [])}
   end
 
   @impl true
@@ -74,6 +77,15 @@ defmodule MedoruWeb.Admin.KanjiLive.Form do
     |> assign(:enrich_error, nil)
     |> assign(:enrich_prompt, KanjiEnrichment.main_prompt(kanji.character))
     |> assign(:suggested_readings, [])
+    |> assign(:example_words, load_example_words(kanji.id))
+    |> assign(:example_word_search, "")
+    |> assign(:example_word_results, [])
+  end
+
+  defp load_example_words(kanji_id) do
+    kanji_id
+    |> Content.list_example_words_for_kanji()
+    |> Enum.map(&%{id: &1.id, text: &1.text, reading: &1.reading, meaning: &1.meaning})
   end
 
   @impl true
@@ -379,6 +391,80 @@ defmodule MedoruWeb.Admin.KanjiLive.Form do
     end
   end
 
+  # Example words management (kanji drawing challenges)
+  @impl true
+  def handle_event("search_example_words", %{"query" => query}, socket) do
+    kanji = socket.assigns.kanji
+    selected_ids = Enum.map(socket.assigns.example_words, & &1.id)
+    query_downcased = String.downcase(String.trim(query))
+
+    results =
+      if kanji.id do
+        kanji.id
+        |> Content.list_words_by_kanji()
+        |> Enum.reject(&(&1.id in selected_ids))
+        |> Enum.filter(fn word ->
+          query_downcased == "" or
+            String.contains?(String.downcase(word.text || ""), query_downcased) or
+            String.contains?(String.downcase(word.reading || ""), query_downcased) or
+            String.contains?(String.downcase(word.meaning || ""), query_downcased)
+        end)
+        |> Enum.take(20)
+      else
+        []
+      end
+
+    {:noreply,
+     socket
+     |> assign(:example_word_search, query)
+     |> assign(:example_word_results, results)}
+  end
+
+  @impl true
+  def handle_event("add_example_word", %{"id" => id}, socket) do
+    case Enum.find(socket.assigns.example_word_results, &(&1.id == id)) do
+      nil ->
+        {:noreply, socket}
+
+      word ->
+        entry = %{id: word.id, text: word.text, reading: word.reading, meaning: word.meaning}
+
+        {:noreply,
+         socket
+         |> assign(:example_words, socket.assigns.example_words ++ [entry])
+         |> assign(
+           :example_word_results,
+           Enum.reject(socket.assigns.example_word_results, &(&1.id == id))
+         )}
+    end
+  end
+
+  @impl true
+  def handle_event("remove_example_word", %{"id" => id}, socket) do
+    {:noreply,
+     assign(socket, :example_words, Enum.reject(socket.assigns.example_words, &(&1.id == id)))}
+  end
+
+  @impl true
+  def handle_event("move_example_word", %{"id" => id, "direction" => direction}, socket) do
+    words = socket.assigns.example_words
+    index = Enum.find_index(words, &(&1.id == id))
+    new_index = if direction == "up", do: index - 1, else: index + 1
+
+    if index && new_index >= 0 && new_index < length(words) do
+      word = Enum.at(words, index)
+
+      reordered =
+        words
+        |> List.delete_at(index)
+        |> List.insert_at(new_index, word)
+
+      {:noreply, assign(socket, :example_words, reordered)}
+    else
+      {:noreply, socket}
+    end
+  end
+
   defp run_enrichment(:main, character, custom_prompt) do
     KanjiEnrichment.enrich(character, custom_prompt: custom_prompt)
   end
@@ -501,7 +587,12 @@ defmodule MedoruWeb.Admin.KanjiLive.Form do
 
   defp save_kanji(socket, :edit, kanji_params) do
     case Content.update_kanji(socket.assigns.kanji, kanji_params) do
-      {:ok, _kanji} ->
+      {:ok, kanji} ->
+        Content.set_example_words_for_kanji(
+          kanji.id,
+          Enum.map(socket.assigns.example_words, & &1.id)
+        )
+
         {:noreply,
          socket
          |> put_flash(:info, gettext("Kanji updated successfully."))

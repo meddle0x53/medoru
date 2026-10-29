@@ -242,4 +242,134 @@ defmodule MedoruWeb.Admin.KanjiLiveTest do
       assert ordered_ids == [to_string(reading2.id), to_string(reading1.id)]
     end
   end
+
+  describe "Edit kanji example words" do
+    defp word_for_kanji(kanji, attrs) do
+      reading = List.first(kanji.kanji_readings || [])
+
+      {:ok, word} =
+        Medoru.Content.create_word_with_kanji(
+          Enum.into(attrs, %{
+            usage_frequency: 100,
+            difficulty: 5,
+            word_type: :noun
+          }),
+          [%{position: 0, kanji_id: kanji.id, kanji_reading_id: reading && reading.id}]
+        )
+
+      word
+    end
+
+    test "searches, adds, reorders, and saves example words", %{conn: conn} do
+      kanji = kanji_with_readings_fixture()
+
+      word1 =
+        word_for_kanji(kanji, %{
+          text: "一",
+          meaning: "first assigned",
+          reading: "いち"
+        })
+
+      word2 =
+        word_for_kanji(kanji, %{
+          text: "二",
+          meaning: "second assigned",
+          reading: "に"
+        })
+
+      {:ok, view, _html} = live(conn, ~p"/admin/kanji/#{kanji.id}/edit")
+
+      # Search for the first word and add it
+      view
+      |> form("#example-word-search", %{"query" => "first assigned"})
+      |> render_change()
+
+      html =
+        view
+        |> element("button[phx-click='add_example_word'][phx-value-id='#{word1.id}']")
+        |> render_click()
+
+      assert html =~ "data-example-word-id=\"#{word1.id}\""
+
+      # Search for the second word and add it
+      view
+      |> form("#example-word-search", %{"query" => "second assigned"})
+      |> render_change()
+
+      view
+      |> element("button[phx-click='add_example_word'][phx-value-id='#{word2.id}']")
+      |> render_click()
+
+      # Reorder: move the first word down
+      html =
+        view
+        |> element(
+          "button[phx-click='move_example_word'][phx-value-id='#{word1.id}'][phx-value-direction='down']"
+        )
+        |> render_click()
+
+      ordered_ids =
+        Regex.scan(~r/data-example-word-id="([^"]+)"/, html) |> Enum.map(&List.last/1)
+
+      assert ordered_ids == [to_string(word2.id), to_string(word1.id)]
+
+      # Save the kanji form
+      view
+      |> form("#kanji-form", %{
+        "kanji" => %{
+          "character" => kanji.character,
+          "meanings" => "test meaning",
+          "stroke_count" => "4"
+        }
+      })
+      |> render_submit()
+
+      assert Enum.map(
+               Medoru.Content.list_example_words_for_kanji(kanji.id),
+               & &1.id
+             ) == [word2.id, word1.id]
+    end
+
+    test "removes an example word before saving", %{conn: conn} do
+      kanji = kanji_with_readings_fixture()
+      word1 = word_for_kanji(kanji, %{text: "一", meaning: "first", reading: "いち"})
+      word2 = word_for_kanji(kanji, %{text: "二", meaning: "second", reading: "に"})
+
+      {:ok, _} = Medoru.Content.set_example_words_for_kanji(kanji.id, [word1.id, word2.id])
+
+      {:ok, view, html} = live(conn, ~p"/admin/kanji/#{kanji.id}/edit")
+
+      # Both assignments are loaded on mount
+      assert html =~ "data-example-word-id=\"#{word1.id}\""
+      assert html =~ "data-example-word-id=\"#{word2.id}\""
+
+      # Already assigned words do not show up in search results
+      view
+      |> form("#example-word-search", %{"query" => ""})
+      |> render_change()
+
+      refute render(view) =~
+               "button phx-click=\"add_example_word\" phx-value-id=\"#{word1.id}\""
+
+      # Remove the second word and save
+      view
+      |> element("button[phx-click='remove_example_word'][phx-value-id='#{word2.id}']")
+      |> render_click()
+
+      view
+      |> form("#kanji-form", %{
+        "kanji" => %{
+          "character" => kanji.character,
+          "meanings" => "test meaning",
+          "stroke_count" => "4"
+        }
+      })
+      |> render_submit()
+
+      assert Enum.map(
+               Medoru.Content.list_example_words_for_kanji(kanji.id),
+               & &1.id
+             ) == [word1.id]
+    end
+  end
 end

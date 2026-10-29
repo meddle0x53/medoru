@@ -34,20 +34,18 @@ defmodule MedoruWeb.KanjiMasterLive do
   def handle_params(_params, _url, socket) do
     user = socket.assigns.current_scope.current_user
 
-    if socket.assigns.live_action in [:n5, :n4] do
-      # N5/N4 modes: no gate — anyone (including anonymous visitors) plays,
+    if socket.assigns.live_action in [:n5, :n4, :n3] do
+      # N5/N4/N3 modes: no gate — anyone (including anonymous visitors) plays,
       # and everyone starts with the same 10 coins.
       mode = Atom.to_string(socket.assigns.live_action)
 
-      page_title =
-        if socket.assigns.live_action == :n4,
-          do: gettext("Kanji Master N4"),
-          else: gettext("Kanji Master N5")
-
-      pool =
-        if socket.assigns.live_action == :n4,
-          do: Challenges.kanji_master_n4_pool(),
-          else: Challenges.kanji_master_n5_pool()
+      {page_title, pool_fun} =
+        %{
+          n5: {gettext("Kanji Master N5"), &Challenges.kanji_master_n5_pool/0},
+          n4: {gettext("Kanji Master N4"), &Challenges.kanji_master_n4_pool/0},
+          n3: {gettext("Kanji Master N3"), &Challenges.kanji_master_n3_pool/0}
+        }
+        |> Map.fetch!(socket.assigns.live_action)
 
       {:noreply,
        socket
@@ -56,7 +54,7 @@ defmodule MedoruWeb.KanjiMasterLive do
        |> assign(:gate?, false)
        |> assign(:anonymous?, is_nil(user))
        |> assign(:learned_count, if(user, do: Challenges.learned_kanji_count(user), else: 0))
-       |> assign(:pool, pool)
+       |> assign(:pool, pool_fun.())
        |> assign(:boss_pool, boss_pool())
        |> assign(:start_coins, 10)
        |> assign(:game_over, nil)
@@ -414,6 +412,9 @@ defmodule MedoruWeb.KanjiMasterLive do
                   <button id="km-buy-hint" class="btn btn-sm w-full btn-primary">
                     {gettext("+1 yellow stroke")} — <span class="km-price"></span>
                   </button>
+                  <button id="km-sell-hints" class="btn btn-sm w-full btn-primary">
+                    {gettext("Sell 4 yellow strokes")} — <span class="km-price">+1 🪙</span>
+                  </button>
                   <button id="km-buy-pack" class="btn btn-sm w-full btn-primary">
                     {gettext("Upgrade pack (3 offers, pick 1)")} — <span class="km-price"></span>
                   </button>
@@ -635,7 +636,7 @@ defmodule MedoruWeb.KanjiMasterLive do
                 </li>
                 <li>
                   <span class="font-bold" style="color: #c0c0c0">{gettext("Silver")}</span>
-                  — {gettext("10% chance to win a life when drawn correctly.")}
+                  — {gettext("20% chance to win a life when drawn correctly.")}
                 </li>
                 <li>
                   <span class="font-bold" style="color: #06b6d4">{gettext("Cyan")}</span>

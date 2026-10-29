@@ -238,6 +238,188 @@ defmodule Medoru.Tests.LessonTestSession do
   end
 
   @doc """
+  Submits a single-field text answer for validation.
+
+  Used by `meaning_only` and `reading_only` steps where only one of the
+  meaning/reading fields is asked. Grades against the step's single
+  `correct_answer` value using the same normalization as the dual-field
+  reading text answer.
+
+  ## Parameters
+    * `answer` - User's typed answer
+    * `field` - `:meaning` or `:reading`
+    * `opts` - Additional options:
+      * `:locale` - User's locale for validation (default: "en")
+      * `:time_spent_seconds` - Time spent on this step
+
+  ## Examples
+
+      iex> submit_single_text_answer(session_id, step_id, "to eat", :meaning)
+      {:correct, %{field_correct: true}}
+
+  """
+  def submit_single_text_answer(session_id, step_id, answer, field, opts \\ [])
+      when field in [:meaning, :reading] do
+    time_spent = Keyword.get(opts, :time_spent_seconds, 0)
+    locale = Keyword.get(opts, :locale, "en")
+
+    session =
+      TestSession
+      |> where([ts], ts.id == ^session_id)
+      |> preload(:test)
+      |> Repo.one!()
+
+    step = Repo.get!(TestStep, step_id)
+
+    word =
+      if step.word_id do
+        Medoru.Content.get_word!(step.word_id)
+      else
+        nil
+      end
+
+    {is_correct, field_correct} =
+      if field == :meaning do
+        correct =
+          if word do
+            Medoru.Tests.ReadingAnswerValidator.validate_meaning_for_locale(
+              word,
+              answer,
+              locale
+            )
+          else
+            Medoru.Tests.ReadingAnswerValidator.validate_meaning(step.correct_answer, answer)
+          end
+
+        {correct, correct}
+      else
+        correct_reading =
+          if word do
+            word.reading
+          else
+            step.correct_answer
+          end
+
+        correct = Medoru.Tests.ReadingAnswerValidator.validate_reading(correct_reading, answer)
+        {correct, correct}
+      end
+
+    validation_result = %{field_correct: field_correct, field: field}
+
+    metadata = session.metadata || %{}
+    answer_counter = metadata["answer_counter"] || 0
+
+    answer_text =
+      Jason.encode!(%{
+        "#{field}" => answer,
+        validation: validation_result
+      })
+
+    attrs = %{
+      "answer" => answer_text,
+      "time_spent_seconds" => time_spent,
+      "step_index" => answer_counter,
+      "is_correct" => is_correct
+    }
+
+    {:ok, _step_answer} = Tests.record_step_answer(session_id, step_id, attrs)
+
+    {updated_session, new_queue, total_steps, progress_index} =
+      advance_session(session, step_id, is_correct, time_spent)
+
+    if is_correct do
+      if new_queue == [] do
+        complete_lesson_test(updated_session, total_steps)
+      else
+        next_step = Repo.get!(TestStep, hd(new_queue))
+
+        {:correct,
+         %{
+           session: updated_session,
+           next_step: next_step,
+           remaining_count: length(new_queue),
+           total_steps: total_steps,
+           completed_steps: progress_index,
+           validation: validation_result
+         }}
+      end
+    else
+      next_step_id = List.first(new_queue)
+      next_step = Repo.get!(TestStep, next_step_id || step_id)
+
+      correct_meaning =
+        if word do
+          Medoru.Content.get_localized_meaning(word, locale)
+        else
+          ""
+        end
+
+      {:incorrect,
+       %{
+         session: updated_session,
+         next_step: next_step,
+         remaining_count: length(new_queue),
+         wrong_answer: validation_result,
+         retry_position: length(new_queue),
+         correct_meaning: correct_meaning,
+         correct_reading: word && word.reading
+       }}
+    end
+  end
+
+  # Records the queue/session bookkeeping shared by the text answer
+  # submitters: moves the step out of (or to the end of) the queue, bumps
+  # counters, and persists the session. Returns the updated session, the new
+  # queue, total steps, and the progress index.
+  defp advance_session(session, step_id, is_correct, time_spent) do
+    metadata = session.metadata || %{}
+    answer_counter = metadata["answer_counter"] || 0
+    step_queue = metadata["step_queue"] || []
+
+    new_queue =
+      if is_correct do
+        List.delete(step_queue, step_id)
+      else
+        List.delete(step_queue, step_id) ++ [step_id]
+      end
+
+    wrong_count =
+      if is_correct do
+        metadata["wrong_answer_count"] || 0
+      else
+        (metadata["wrong_answer_count"] || 0) + 1
+      end
+
+    new_metadata = %{
+      metadata
+      | "step_queue" => new_queue,
+        "wrong_answer_count" => wrong_count,
+        "current_step_id" => List.first(new_queue),
+        "answer_counter" => answer_counter + 1
+    }
+
+    total_steps = metadata["total_steps"] || length(step_queue)
+    progress_index = total_steps - length(new_queue)
+
+    updated_session =
+      if is_correct do
+        session
+        |> TestSession.progress_changeset(progress_index, session.time_spent_seconds + time_spent)
+        |> Ecto.Changeset.put_change(:metadata, new_metadata)
+        |> Repo.update!()
+      else
+        session
+        |> Ecto.Changeset.change(
+          metadata: new_metadata,
+          current_step_index: session.current_step_index + 1
+        )
+        |> Repo.update!()
+      end
+
+    {updated_session, new_queue, total_steps, progress_index}
+  end
+
+  @doc """
   Submits a writing step answer for validation.
 
   ## Parameters

@@ -210,54 +210,93 @@
             <% @current_step.question_type == :reading_text -> %>
               <%!-- Reading Text Question --%>
               <% is_kana_only = @current_step.question_data["is_kana_only"] || false %>
+              <% text_mode = @current_step.question_data["text_mode"] || "both" %>
               <div class="mb-4 sm:mb-6">
                 <div class="text-xs sm:text-sm text-secondary mb-3 sm:mb-4">
-                  <%= if is_kana_only do %>
-                    {gettext("Type the meaning:")}
-                  <% else %>
-                    {gettext("Type the meaning and reading:")}
+                  <%= cond do %>
+                    <% text_mode == "meaning" -> %>
+                      {gettext("Type the meaning:")}
+                    <% text_mode == "reading" -> %>
+                      {gettext("Type the reading:")}
+                    <% is_kana_only -> %>
+                      {gettext("Type the meaning:")}
+                    <% true -> %>
+                      {gettext("Type the meaning and reading:")}
                   <% end %>
                 </div>
                 <h2 class="text-3xl sm:text-4xl font-bold text-primary font-japanese text-center mb-1 sm:mb-2">
                   {@current_step.question}
                 </h2>
-              </div>
-
-              <%!-- Answer Inputs --%>
-              <div class="space-y-4 mb-4 sm:mb-6">
-                <div>
-                  <label class="block text-sm font-medium text-base-content mb-2">
-                    {gettext("Meaning (English)")}
-                  </label>
-                  <input
-                    type="text"
-                    name="meaning_answer"
-                    value={@meaning_answer}
-                    phx-keyup="update_meaning"
-                    phx-debounce="200"
-                    placeholder={gettext("Enter meaning...")}
-                    disabled={not is_nil(@feedback)}
-                    class="w-full px-4 py-3 rounded-xl border border-base-300 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all disabled:opacity-60"
-                  />
-                </div>
-                <%= if not is_kana_only do %>
-                  <div>
-                    <label class="block text-sm font-medium text-base-content mb-2">
-                      {gettext("Reading (Hiragana)")}
-                    </label>
-                    <input
-                      type="text"
-                      name="reading_answer"
-                      value={@reading_answer}
-                      phx-keyup="update_reading"
-                      phx-debounce="200"
-                      placeholder={gettext("Enter reading...")}
-                      disabled={not is_nil(@feedback)}
-                      class="w-full px-4 py-3 rounded-xl border border-base-300 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all font-japanese disabled:opacity-60"
-                    />
+                <%= if text_mode == "meaning" and @current_step.question_data["word_reading"] do %>
+                  <div class="text-lg text-secondary mt-1 text-center font-japanese">
+                    {@current_step.question_data["word_reading"]}
+                  </div>
+                <% end %>
+                <%= if text_mode == "reading" and @current_step.question_data["word_meaning"] do %>
+                  <div class="text-base text-secondary mt-1 text-center">
+                    {@current_step.question_data["word_meaning"]}
                   </div>
                 <% end %>
               </div>
+
+              <%!-- Answer Inputs (hidden once answered, so the next step's
+                  input mounts fresh and phx-mounted refocuses it) --%>
+              <%= if is_nil(@feedback) do %>
+                <div class="space-y-4 mb-4 sm:mb-6">
+                  <%= if text_mode == "reading" do %>
+                    <div>
+                      <label class="block text-sm font-medium text-base-content mb-2">
+                        {gettext("Reading (Hiragana)")}
+                      </label>
+                      <input
+                        type="text"
+                        name="reading_answer"
+                        value={@reading_answer}
+                        phx-keyup="update_reading"
+                        phx-debounce="200"
+                        phx-mounted={JS.focus()}
+                        placeholder={gettext("Enter the hiragana reading")}
+                        disabled={not is_nil(@feedback)}
+                        class="w-full px-4 py-3 rounded-xl border border-base-300 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all font-japanese disabled:opacity-60"
+                      />
+                    </div>
+                  <% else %>
+                    <div>
+                      <label class="block text-sm font-medium text-base-content mb-2">
+                        {gettext("Meaning (English)")}
+                      </label>
+                      <input
+                        type="text"
+                        name="meaning_answer"
+                        value={@meaning_answer}
+                        phx-keyup="update_meaning"
+                        phx-debounce="200"
+                        phx-mounted={JS.focus()}
+                        placeholder={gettext("Enter meaning...")}
+                        disabled={not is_nil(@feedback)}
+                        class="w-full px-4 py-3 rounded-xl border border-base-300 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all disabled:opacity-60"
+                      />
+                    </div>
+                    <%= if text_mode == "both" and not is_kana_only do %>
+                      <div>
+                        <label class="block text-sm font-medium text-base-content mb-2">
+                          {gettext("Reading (Hiragana)")}
+                        </label>
+                        <input
+                          type="text"
+                          name="reading_answer"
+                          value={@reading_answer}
+                          phx-keyup="update_reading"
+                          phx-debounce="200"
+                          placeholder={gettext("Enter reading...")}
+                          disabled={not is_nil(@feedback)}
+                          class="w-full px-4 py-3 rounded-xl border border-base-300 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all font-japanese disabled:opacity-60"
+                        />
+                      </div>
+                    <% end %>
+                  <% end %>
+                </div>
+              <% end %>
 
               <%!-- Result / Actions for Reading Text --%>
               <%= if is_nil(@feedback) do %>
@@ -266,7 +305,8 @@
                     type="button"
                     phx-click="submit_reading_text"
                     disabled={
-                      @meaning_answer == "" or (not is_kana_only and @reading_answer == "")
+                      (text_mode == "reading" and @reading_answer == "") or
+                        (text_mode != "reading" and @meaning_answer == "")
                     }
                     class="w-full sm:w-auto px-4 sm:px-6 py-3 bg-primary text-primary-content rounded-xl font-medium hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors min-h-[48px] order-1"
                   >
@@ -299,9 +339,15 @@
                       <div>
                         <p class="font-semibold text-error text-lg">{gettext("Incorrect")}</p>
                         <p class="text-error-content/80">
-                          {gettext("The correct answer is: %{answer}",
-                            answer: String.replace(@current_step.correct_answer, "|", " / ")
-                          )}
+                          <%= if text_mode == "both" do %>
+                            {gettext("The correct answer is: %{answer}",
+                              answer: String.replace(@current_step.correct_answer, "|", " / ")
+                            )}
+                          <% else %>
+                            {gettext("The correct answer is: %{answer}",
+                              answer: @current_step.correct_answer
+                            )}
+                          <% end %>
                         </p>
                       </div>
                     </div>

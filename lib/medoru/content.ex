@@ -17,7 +17,8 @@ defmodule Medoru.Content do
     LessonWord,
     KanjiReadingExtractor,
     CustomLesson,
-    CustomLessonWord
+    CustomLessonWord,
+    KanjiExampleWord
   }
 
   alias Medoru.Learning.{UserEnglishProgress, UserProgress, WordSet}
@@ -1007,6 +1008,78 @@ defmodule Medoru.Content do
   end
 
   @doc """
+  Returns the list of admin-assigned example words for a kanji, ordered by position.
+  """
+  def list_example_words_for_kanji(kanji_id) do
+    KanjiExampleWord
+    |> where([ew], ew.kanji_id == ^kanji_id)
+    |> order_by([ew], asc: ew.position)
+    |> join(:inner, [ew], w in assoc(ew, :word))
+    |> select([ew, w], w)
+    |> Repo.all()
+  end
+
+  @doc """
+  Replaces the admin-assigned example words for a kanji with the given word
+  ids, ordered by their position in the list. Runs in a transaction.
+
+  ## Examples
+
+      iex> set_example_words_for_kanji(kanji_id, [word_id_1, word_id_2])
+      {:ok, [%Word{}, ...]}
+
+  """
+  def set_example_words_for_kanji(kanji_id, word_ids) when is_list(word_ids) do
+    Repo.transaction(fn ->
+      KanjiExampleWord
+      |> where([ew], ew.kanji_id == ^kanji_id)
+      |> Repo.delete_all()
+
+      word_ids
+      |> Enum.with_index()
+      |> Enum.reduce_while(:ok, fn {word_id, position}, :ok ->
+        changeset =
+          KanjiExampleWord.changeset(%KanjiExampleWord{}, %{
+            kanji_id: kanji_id,
+            word_id: word_id,
+            position: position
+          })
+
+        case Repo.insert(changeset) do
+          {:ok, _} -> {:cont, :ok}
+          {:error, changeset} -> {:halt, {:error, changeset}}
+        end
+      end)
+      |> case do
+        :ok -> list_example_words_for_kanji(kanji_id)
+        {:error, changeset} -> Repo.rollback(changeset)
+      end
+    end)
+  end
+
+  @doc """
+  Returns a map of kanji_id => first admin-assigned example word for each of
+  the given kanji ids. One query total; the assigned word with the lowest
+  position wins per kanji. Kanji without assignments are omitted.
+  """
+  def example_word_map_for_kanji_ids(kanji_ids) when is_list(kanji_ids) do
+    kanji_ids = Enum.reject(kanji_ids, &(not is_binary(&1)))
+
+    if kanji_ids == [] do
+      %{}
+    else
+      KanjiExampleWord
+      |> where([ew], ew.kanji_id in ^kanji_ids)
+      |> order_by([ew], asc: ew.position)
+      |> join(:inner, [ew], w in assoc(ew, :word))
+      |> select([ew, w], {ew.kanji_id, w})
+      |> Repo.all()
+      |> Enum.uniq_by(&elem(&1, 0))
+      |> Map.new()
+    end
+  end
+
+  @doc """
   Returns the most frequent word containing the given kanji character,
   as a plain map `%{word: text, reading: reading, meaning: meaning}`, or nil.
   Used to show an example word next to kanji drawing challenges.
@@ -1019,9 +1092,12 @@ defmodule Medoru.Content do
   end
 
   @doc """
-  Returns a map of character => most frequent word (`%{word:, reading:, meaning:}`)
+  Returns a map of character => example word (`%{word:, reading:, meaning:}`)
   for each of the given kanji characters. One query total; the first word per
   character in ascending usage_frequency order wins.
+
+  Characters with admin-assigned example words (see `set_example_words_for_kanji/2`)
+  use their assigned word (lowest position) instead of the frequency-based pick.
   """
   def get_challenge_word_map_for_characters(characters) when is_list(characters) do
     characters = Enum.reject(characters, &(not is_binary(&1)))
@@ -1029,26 +1105,58 @@ defmodule Medoru.Content do
     if characters == [] do
       %{}
     else
-      WordKanji
-      |> join(:inner, [wk], w in assoc(wk, :word))
-      |> join(:inner, [wk], k in assoc(wk, :kanji))
-      |> where(
-        [wk, w, k],
-        k.character in ^characters and not is_nil(w.reading) and not is_nil(w.meaning)
-      )
-      |> order_by([wk, w], asc: w.usage_frequency)
-      |> select([wk, w, k], %{
-        character: k.character,
-        word: w.text,
-        reading: w.reading,
-        meaning: w.meaning
-      })
-      |> Repo.all()
-      # Rows are ordered by frequency, so the first row per character is the
-      # most frequent word containing it.
-      |> Enum.uniq_by(& &1.character)
-      |> Map.new(&{&1.character, %{word: &1.word, reading: &1.reading, meaning: &1.meaning}})
+      frequency_map = challenge_word_map_from_frequency(characters)
+      assigned_map = challenge_word_map_from_assignments(characters)
+
+      Map.merge(frequency_map, assigned_map)
     end
+  end
+
+  defp challenge_word_map_from_frequency(characters) do
+    WordKanji
+    |> join(:inner, [wk], w in assoc(wk, :word))
+    |> join(:inner, [wk], k in assoc(wk, :kanji))
+    |> where(
+      [wk, w, k],
+      k.character in ^characters and not is_nil(w.reading) and not is_nil(w.meaning)
+    )
+    |> order_by([wk, w], asc: w.usage_frequency)
+    |> select([wk, w, k], %{
+      character: k.character,
+      word: w.text,
+      reading: w.reading,
+      meaning: w.meaning
+    })
+    |> Repo.all()
+    # Rows are ordered by frequency, so the first row per character is the
+    # most frequent word containing it.
+    |> Enum.uniq_by(& &1.character)
+    |> Map.new(&{&1.character, %{word: &1.word, reading: &1.reading, meaning: &1.meaning}})
+  end
+
+  # Admin-assigned example words, one query for all characters. The reading
+  # comes from the word_kanji row's kanji_reading (falling back to the word's
+  # own reading); rows are ordered by assignment position so the first row
+  # per character wins.
+  defp challenge_word_map_from_assignments(characters) do
+    KanjiExampleWord
+    |> join(:inner, [ew], k in assoc(ew, :kanji))
+    |> join(:inner, [ew], w in assoc(ew, :word))
+    |> join(:left, [ew], wk in WordKanji,
+      on: wk.word_id == ew.word_id and wk.kanji_id == ew.kanji_id
+    )
+    |> join(:left, [ew, k, w, wk], kr in assoc(wk, :kanji_reading))
+    |> where([ew, k], k.character in ^characters)
+    |> order_by([ew], asc: ew.position)
+    |> select([ew, k, w, wk, kr], %{
+      character: k.character,
+      word: w.text,
+      reading: coalesce(kr.reading, w.reading),
+      meaning: w.meaning
+    })
+    |> Repo.all()
+    |> Enum.uniq_by(& &1.character)
+    |> Map.new(&{&1.character, %{word: &1.word, reading: &1.reading, meaning: &1.meaning}})
   end
 
   @doc """

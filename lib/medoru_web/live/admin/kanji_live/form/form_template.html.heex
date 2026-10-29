@@ -549,6 +549,110 @@
           </div>
         <% end %>
 
+        <%!-- Example Words Section (for edit mode) - OUTSIDE the kanji form --%>
+        <%= if @live_action == :edit do %>
+          <div class="border-t border-base-300 pt-6 mt-6" id="example-words-section">
+            <h3 class="text-lg font-semibold mb-1 flex items-center gap-2">
+              <.icon name="hero-book-open" class="w-5 h-5" />
+              {gettext("Example Words")}
+              <span class="text-sm font-normal text-base-content/60">
+                ({length(@example_words)} {gettext("total")})
+              </span>
+            </h3>
+            <p class="text-sm text-base-content/60 mb-4">
+              {gettext(
+                "Assigned words are shown in kanji drawing challenges (Daily Kanji Test, Kanji Master) instead of the most frequent word."
+              )}
+            </p>
+
+            <%!-- Selected Words --%>
+            <div id="selected-example-words" class="space-y-2">
+              <%= for {word, index} <- Enum.with_index(@example_words) do %>
+                <div
+                  class="flex items-center gap-2 p-2 bg-base-200/50 rounded-lg"
+                  data-example-word-id={word.id}
+                >
+                  <span class="badge badge-sm badge-primary">{index + 1}</span>
+                  <span class="font-medium">{word.text}</span>
+                  <span class="text-sm text-base-content/60">{word.reading}</span>
+                  <span class="text-sm text-base-content/50 truncate">{word.meaning}</span>
+                  <div class="ml-auto flex gap-1">
+                    <button
+                      type="button"
+                      phx-click="move_example_word"
+                      phx-value-id={word.id}
+                      phx-value-direction="up"
+                      disabled={index == 0}
+                      class="btn btn-ghost btn-sm min-h-[32px] min-w-[32px]"
+                      title={gettext("Move up")}
+                    >
+                      <.icon name="hero-chevron-up" class="w-4 h-4" />
+                    </button>
+                    <button
+                      type="button"
+                      phx-click="move_example_word"
+                      phx-value-id={word.id}
+                      phx-value-direction="down"
+                      disabled={index == length(@example_words) - 1}
+                      class="btn btn-ghost btn-sm min-h-[32px] min-w-[32px]"
+                      title={gettext("Move down")}
+                    >
+                      <.icon name="hero-chevron-down" class="w-4 h-4" />
+                    </button>
+                    <button
+                      type="button"
+                      phx-click="remove_example_word"
+                      phx-value-id={word.id}
+                      class="btn btn-ghost btn-sm min-h-[32px] min-w-[32px] text-error"
+                      title={gettext("Remove")}
+                    >
+                      <.icon name="hero-x-mark" class="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+              <% end %>
+            </div>
+
+            <%= if @example_words == [] do %>
+              <p class="text-sm text-base-content/50 text-center py-4">
+                {gettext("No example words assigned. The most frequent word will be used.")}
+              </p>
+            <% end %>
+
+            <%!-- Search --%>
+            <form id="example-word-search" phx-change="search_example_words" class="mt-4">
+              <.input
+                type="text"
+                name="query"
+                value={@example_word_search}
+                phx-debounce="300"
+                placeholder={gettext("Search words containing this kanji...")}
+              />
+            </form>
+
+            <div id="example-word-results" class="mt-2 space-y-1">
+              <%= for word <- @example_word_results do %>
+                <button
+                  type="button"
+                  phx-click="add_example_word"
+                  phx-value-id={word.id}
+                  class="w-full flex items-center justify-between gap-2 p-2 rounded-lg hover:bg-base-200 text-left"
+                >
+                  <span>
+                    <span class="font-medium">{word.text}</span>
+                    <span class="text-sm text-base-content/60 ml-1">{word.reading}</span>
+                  </span>
+                  <span class="text-sm text-base-content/50 truncate">{word.meaning}</span>
+                </button>
+              <% end %>
+            </div>
+
+            <p class="text-xs text-base-content/50 mt-2">
+              {gettext("Assignments are saved when you click \"Update Kanji\".")}
+            </p>
+          </div>
+        <% end %>
+
         <%!-- AI Enrichment Modal --%>
         <%= if @show_enrich_modal do %>
           <div class="modal modal-open">

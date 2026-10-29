@@ -1510,6 +1510,149 @@ defmodule Medoru.ContentTest do
                meaning: "carp"
              }
     end
+
+    test "assigned example words override the frequency-based pick per kanji" do
+      kanji = kanji_fixture(%{character: "曜"})
+      other = kanji_fixture(%{character: "甭"})
+      assigned_kanji = kanji_with_readings_fixture(%{character: "鮪"})
+      assigned_reading = List.first(assigned_kanji.kanji_readings)
+
+      {:ok, frequent} =
+        Content.create_word_with_kanji(
+          %{
+            text: "日曜日",
+            meaning: "Sunday",
+            reading: "にちようび",
+            usage_frequency: 10,
+            difficulty: 5,
+            word_type: :noun
+          },
+          [%{position: 0, kanji_id: kanji.id}, %{position: 1, kanji_id: other.id}]
+        )
+
+      {:ok, assigned} =
+        Content.create_word_with_kanji(
+          %{
+            text: "鮪料理",
+            meaning: "tuna dish",
+            reading: "まぐりょうり",
+            usage_frequency: 9999,
+            difficulty: 5,
+            word_type: :noun
+          },
+          [
+            %{
+              position: 0,
+              kanji_id: assigned_kanji.id,
+              kanji_reading_id: assigned_reading.id
+            }
+          ]
+        )
+
+      {:ok, _fallback} =
+        Content.create_word_with_kanji(
+          %{
+            text: "鮪寿司",
+            meaning: "tuna sushi",
+            reading: "まぐすし",
+            usage_frequency: 10,
+            difficulty: 5,
+            word_type: :noun
+          },
+          [%{position: 0, kanji_id: assigned_kanji.id}]
+        )
+
+      {:ok, _} = Content.set_example_words_for_kanji(assigned_kanji.id, [assigned.id])
+
+      map =
+        Content.get_challenge_word_map_for_characters([
+          kanji.character,
+          assigned_kanji.character
+        ])
+
+      # Unassigned kanji keeps the frequency-based pick
+      assert map[kanji.character] == %{
+               word: frequent.text,
+               reading: frequent.reading,
+               meaning: frequent.meaning
+             }
+
+      # Assigned kanji uses the assigned word with the reading from word_kanji
+      assert map[assigned_kanji.character] == %{
+               word: assigned.text,
+               reading: assigned_reading.reading,
+               meaning: assigned.meaning
+             }
+    end
+  end
+
+  describe "kanji example words" do
+    import Medoru.ContentFixtures
+
+    test "set_example_words_for_kanji/2 and list_example_words_for_kanji/1 roundtrip" do
+      kanji = kanji_fixture()
+      word1 = word_fixture()
+      word2 = word_fixture()
+
+      assert {:ok, words} = Content.set_example_words_for_kanji(kanji.id, [word1.id, word2.id])
+      assert Enum.map(words, & &1.id) == [word1.id, word2.id]
+
+      assert Enum.map(Content.list_example_words_for_kanji(kanji.id), & &1.id) == [
+               word1.id,
+               word2.id
+             ]
+    end
+
+    test "set_example_words_for_kanji/2 replaces existing assignments" do
+      kanji = kanji_fixture()
+      word1 = word_fixture()
+      word2 = word_fixture()
+      word3 = word_fixture()
+
+      {:ok, _} = Content.set_example_words_for_kanji(kanji.id, [word1.id, word2.id])
+      {:ok, _} = Content.set_example_words_for_kanji(kanji.id, [word3.id])
+
+      assert Enum.map(Content.list_example_words_for_kanji(kanji.id), & &1.id) == [word3.id]
+    end
+
+    test "set_example_words_for_kanji/2 with an empty list clears assignments" do
+      kanji = kanji_fixture()
+      word = word_fixture()
+
+      {:ok, _} = Content.set_example_words_for_kanji(kanji.id, [word.id])
+      {:ok, _} = Content.set_example_words_for_kanji(kanji.id, [])
+
+      assert Content.list_example_words_for_kanji(kanji.id) == []
+    end
+
+    test "set_example_words_for_kanji/2 fails on invalid word ids" do
+      kanji = kanji_fixture()
+
+      assert {:error, %Ecto.Changeset{}} =
+               Content.set_example_words_for_kanji(kanji.id, [Ecto.UUID.generate()])
+    end
+
+    test "example_word_map_for_kanji_ids/1 returns the first assigned word per kanji" do
+      kanji1 = kanji_fixture()
+      kanji2 = kanji_fixture()
+      kanji3 = kanji_fixture()
+      word1 = word_fixture()
+      word2 = word_fixture()
+      word3 = word_fixture()
+
+      {:ok, _} = Content.set_example_words_for_kanji(kanji1.id, [word1.id, word2.id])
+      {:ok, _} = Content.set_example_words_for_kanji(kanji2.id, [word3.id])
+
+      map = Content.example_word_map_for_kanji_ids([kanji1.id, kanji2.id, kanji3.id])
+
+      assert map[kanji1.id].id == word1.id
+      assert map[kanji2.id].id == word3.id
+      refute Map.has_key?(map, kanji3.id)
+    end
+
+    test "example_word_map_for_kanji_ids/1 returns an empty map for empty input" do
+      assert Content.example_word_map_for_kanji_ids([]) == %{}
+    end
   end
 
   # Helper functions

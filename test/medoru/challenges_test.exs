@@ -396,4 +396,121 @@ defmodule Medoru.ChallengesTest do
       refute n3_kanji.character in characters
     end
   end
+
+  describe "kanji_master_n3_pool/0" do
+    test "includes N3, N4 and N5 kanji with stroke data, excluding other levels" do
+      n3_kanji =
+        kanji_fixture(%{
+          stroke_count: 10,
+          jlpt_level: 3,
+          stroke_data: %{"strokes" => [%{"path" => "M0 0"}]}
+        })
+
+      n4_kanji =
+        kanji_fixture(%{
+          stroke_count: 8,
+          jlpt_level: 4,
+          stroke_data: %{"strokes" => [%{"path" => "M0 0"}]}
+        })
+
+      n5_kanji =
+        kanji_fixture(%{
+          stroke_count: 4,
+          jlpt_level: 5,
+          stroke_data: %{"strokes" => [%{"path" => "M0 0"}]}
+        })
+
+      _n2_kanji =
+        kanji_fixture(%{
+          stroke_count: 12,
+          jlpt_level: 2,
+          stroke_data: %{"strokes" => [%{"path" => "M0 0"}]}
+        })
+
+      _no_strokes = kanji_fixture(%{jlpt_level: 3, stroke_data: %{"strokes" => []}})
+
+      pool = Challenges.kanji_master_n3_pool()
+      characters = Enum.map(pool, & &1.character)
+
+      assert n3_kanji.character in characters
+      assert n4_kanji.character in characters
+      assert n5_kanji.character in characters
+      refute _n2_kanji.character in characters
+      refute _no_strokes.character in characters
+    end
+
+    test "word is the rarest word with usage_frequency < 1000 using the kanji" do
+      kanji =
+        kanji_with_readings_fixture(%{
+          jlpt_level: 3,
+          stroke_count: 10,
+          stroke_data: %{"strokes" => [%{"path" => "M0 0"}]}
+        })
+
+      reading = hd(kanji.kanji_readings)
+
+      {:ok, common} =
+        Medoru.Content.create_word_with_kanji(
+          %{
+            text: "常用語",
+            meaning: "common meaning",
+            reading: "こもん",
+            difficulty: 5,
+            usage_frequency: 10,
+            word_type: :noun
+          },
+          [%{position: 0, kanji_id: kanji.id, kanji_reading_id: reading.id}]
+        )
+
+      {:ok, rare} =
+        Medoru.Content.create_word_with_kanji(
+          %{
+            text: "希少語",
+            meaning: "rare meaning",
+            reading: "れあ",
+            difficulty: 5,
+            usage_frequency: 900,
+            word_type: :noun
+          },
+          [%{position: 0, kanji_id: kanji.id, kanji_reading_id: reading.id}]
+        )
+
+      assert [entry] =
+               Challenges.kanji_master_n3_pool()
+               |> Enum.filter(&(&1.character == kanji.character))
+
+      assert entry.word.text == rare.text
+      assert entry.word.text != common.text
+    end
+
+    test "word is nil when no word under the frequency cap uses the kanji" do
+      kanji =
+        kanji_with_readings_fixture(%{
+          jlpt_level: 3,
+          stroke_count: 10,
+          stroke_data: %{"strokes" => [%{"path" => "M0 0"}]}
+        })
+
+      reading = hd(kanji.kanji_readings)
+
+      {:ok, _too_frequent} =
+        Medoru.Content.create_word_with_kanji(
+          %{
+            text: "超頻出語",
+            meaning: "too frequent",
+            reading: "ちょう",
+            difficulty: 5,
+            usage_frequency: 1000,
+            word_type: :noun
+          },
+          [%{position: 0, kanji_id: kanji.id, kanji_reading_id: reading.id}]
+        )
+
+      assert [entry] =
+               Challenges.kanji_master_n3_pool()
+               |> Enum.filter(&(&1.character == kanji.character))
+
+      assert entry.word == nil
+    end
+  end
 end

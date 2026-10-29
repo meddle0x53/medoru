@@ -84,7 +84,7 @@ defmodule Medoru.Tests.WordSetTestGenerator do
         # Filter out reading types for pure kana words
         word_types =
           if only_kana?(word.text) do
-            Enum.reject(step_types, &(&1 in [:word_to_reading, :reading_to_word]))
+            Enum.reject(step_types, &(&1 in [:word_to_reading, :reading_to_word, :reading_only]))
           else
             step_types
           end
@@ -168,6 +168,46 @@ defmodule Medoru.Tests.WordSetTestGenerator do
         word_text: word.text,
         word_reading: word.reading,
         question_label: "reading_text",
+        is_kana_only: only_kana?(word.text)
+      }
+    }
+  end
+
+  defp build_step_data(word, :meaning_only, _distractor_count, _distractor_pool) do
+    %{
+      step_type: :vocabulary,
+      question_type: :reading_text,
+      question: "#{word.text}",
+      correct_answer: word.meaning,
+      word_id: word.id,
+      points: 0,
+      hints: ["Type the English meaning of the word"],
+      question_data: %{
+        word_text: word.text,
+        word_meaning: word.meaning,
+        word_reading: word.reading,
+        question_label: "meaning_only",
+        text_mode: "meaning",
+        is_kana_only: only_kana?(word.text)
+      }
+    }
+  end
+
+  defp build_step_data(word, :reading_only, _distractor_count, _distractor_pool) do
+    %{
+      step_type: :vocabulary,
+      question_type: :reading_text,
+      question: "#{word.text}",
+      correct_answer: word.reading,
+      word_id: word.id,
+      points: 0,
+      hints: ["Type the hiragana reading of the word"],
+      question_data: %{
+        word_text: word.text,
+        word_meaning: word.meaning,
+        word_reading: word.reading,
+        question_label: "reading_only",
+        text_mode: "reading",
         is_kana_only: only_kana?(word.text)
       }
     }
@@ -298,6 +338,8 @@ defmodule Medoru.Tests.WordSetTestGenerator do
       :word_to_meaning,
       :word_to_reading,
       :reading_text,
+      :meaning_only,
+      :reading_only,
       :image_to_meaning,
       :kanji_writing
     ]

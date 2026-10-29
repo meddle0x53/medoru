@@ -48,6 +48,7 @@ defmodule MedoruWeb.LearnedKanjiLive.PracticeChallenge do
 
       count = length(kanji_list)
       current_kanji = List.first(kanji_list)
+      assigned_words = Content.example_word_map_for_kanji_ids(valid_ids)
 
       {:noreply,
        socket
@@ -57,7 +58,8 @@ defmodule MedoruWeb.LearnedKanjiLive.PracticeChallenge do
        |> assign(:kanji_list, kanji_list)
        |> assign(:current_index, 1)
        |> assign(:current_kanji, current_kanji)
-       |> assign(:current_word, Learning.most_frequent_word_for_kanji(user.id, current_kanji.id))
+       |> assign(:assigned_words, assigned_words)
+       |> assign(:current_word, word_for_kanji(user, assigned_words, current_kanji))
        |> assign(:current_wrong_strokes, 0)
        |> assign(:results, [])
        |> assign(:correct_count, 0)
@@ -124,11 +126,17 @@ defmodule MedoruWeb.LearnedKanjiLive.PracticeChallenge do
        socket
        |> assign(:current_index, current_index + 1)
        |> assign(:current_kanji, next_kanji)
-       |> assign(:current_word, Learning.most_frequent_word_for_kanji(user.id, next_kanji.id))
+       |> assign(:current_word, word_for_kanji(user, socket.assigns.assigned_words, next_kanji))
        |> assign(:current_wrong_strokes, 0)
        |> assign(:results, results)
        |> assign(:correct_count, correct_count)}
     end
+  end
+
+  # Admin-assigned example words take precedence over the frequency-based pick.
+  defp word_for_kanji(user, assigned_words, kanji) do
+    Map.get(assigned_words, kanji.id) ||
+      Learning.most_frequent_word_for_kanji(user.id, kanji.id)
   end
 
   defp update_known_score(user_id, kanji_id, completed) do

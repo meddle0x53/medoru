@@ -505,7 +505,7 @@
             <div class="space-y-4">
               <%= for {word_kanji, readings} <- @word_kanjis_with_readings do %>
                 <div class="p-4 bg-base-200/50 rounded-lg">
-                  <div class="flex items-center gap-3 mb-3">
+                  <div class="flex flex-wrap items-center gap-x-3 gap-y-1 mb-3">
                     <label class="flex items-center gap-2 cursor-pointer">
                       <input
                         type="checkbox"
@@ -519,7 +519,12 @@
                     <span class="text-3xl font-medium text-primary">
                       {word_kanji.kanji.character}
                     </span>
-                    <span class="text-sm text-secondary">
+                    <%= if meanings = Enum.take(word_kanji.kanji.meanings || [], 2) do %>
+                      <span class="text-sm text-base-content/60 min-w-0 break-words">
+                        {Enum.join(meanings, ", ")}
+                      </span>
+                    <% end %>
+                    <span class="text-sm text-secondary ml-auto">
                       {gettext("Position")} #{word_kanji.position + 1}
                     </span>
                   </div>

@@ -1203,7 +1203,7 @@ const KanjiMaster = {
       if (upgrade === 'kaki') gained = 2
       if (upgrade === 'toki') gained = 5
       if (upgrade === 'fuji' && Math.random() < 0.6) gained = 3
-      if (upgrade === 'silver' && Math.random() < 0.1) {
+      if (upgrade === 'silver' && Math.random() < 0.2) {
         this.state.lives += fluorWinDouble ? 2 : 1
       }
       if (upgrade === 'momo' && Math.random() < 0.2) {
@@ -1727,6 +1727,7 @@ const KanjiMaster = {
     bind('km-shop-close', () => this.closeShop())
     bind('km-buy-life', () => this.buyItem('life', 'km-buy-life'))
     bind('km-buy-hint', () => this.buyItem('hint', 'km-buy-hint'))
+    bind('km-sell-hints', () => this.sellHints())
     bind('km-buy-skip', () => this.buyItem('skip', 'km-buy-skip'))
     bind('km-buy-pack', () => this.buyPack())
     bind('km-pack-reroll', () => this.rerollPack())
@@ -1771,6 +1772,21 @@ const KanjiMaster = {
     configure('km-buy-skip', prices.skip, 'skip')
     configure('km-buy-pack', this.state.packCost, 'pack')
 
+    // Selling yellow strokes back: needs 4 charges in hand. The price label
+    // is static ("+1 🪙") so only the disabled state is refreshed here.
+    const sell = document.getElementById('km-sell-hints')
+    if (sell) {
+      if (this.state.hints < 4) {
+        sell.setAttribute('disabled', '')
+        sell.classList.add('btn-disabled')
+        sell.classList.remove('btn-primary')
+      } else {
+        sell.removeAttribute('disabled')
+        sell.classList.remove('btn-disabled')
+        sell.classList.add('btn-primary')
+      }
+    }
+
     // Re-roll button state: cost shown in red when unaffordable. Only
     // available after the pack was bought (re-roll replaces the pack price).
     const reroll = document.getElementById('km-pack-reroll')
@@ -1812,6 +1828,16 @@ const KanjiMaster = {
     }
     if (kind === 'skip') this.showSkipPicker()
 
+    this.refreshShop()
+    this.saveRun()
+  },
+
+  sellHints() {
+    if (this.state.hints < 4) return
+    this.state.hints -= 4
+    this.state.coins += 1
+    this.updateHud()
+    this.animate('km-coins', 'km-anim-bump')
     this.refreshShop()
     this.saveRun()
   },

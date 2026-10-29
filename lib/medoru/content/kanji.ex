@@ -23,6 +23,12 @@ defmodule Medoru.Content.Kanji do
 
     has_many :kanji_readings, Medoru.Content.KanjiReading, preload_order: [asc: :position]
 
+    has_many :kanji_example_words, Medoru.Content.KanjiExampleWord,
+      preload_order: [asc: :position]
+
+    many_to_many :example_words, Medoru.Content.Word,
+      join_through: Medoru.Content.KanjiExampleWord
+
     timestamps(type: :utc_datetime)
   end
 

@@ -618,4 +618,108 @@ defmodule MedoruWeb.WordSetLive.TestTest do
       assert has_element?(view, "button[phx-click='next_step']")
     end
   end
+
+  describe "Word Set Practice Test - single-field text modes" do
+    test "meaning_only renders a single input and a correct answer advances", %{conn: conn} do
+      user = user_fixture()
+      conn = log_in_user(conn, user)
+
+      word = word_fixture(%{text: "食べる", meaning: "to eat", reading: "たべる"})
+      word_set = word_set_fixture(%{user_id: user.id, name: "Meaning Only Test"})
+      {:ok, _} = WordSets.add_word_to_set(word_set, word.id)
+
+      {:ok, _} =
+        WordSets.create_practice_test(word_set,
+          step_types: [:meaning_only],
+          max_steps_per_word: 1
+        )
+
+      word_set = WordSets.get_word_set!(word_set.id)
+
+      {:ok, view, html} = live(conn, ~p"/words/sets/#{word_set.id}/test")
+
+      assert html =~ "Type the meaning:"
+      assert has_element?(view, "input[name='meaning_answer']")
+      refute has_element?(view, "input[name='reading_answer']")
+
+      view
+      |> element("input[name='meaning_answer']")
+      |> render_keyup(%{"value" => "eat"})
+
+      html =
+        view
+        |> element("button[phx-click='submit_reading_text']")
+        |> render_click()
+
+      assert html =~ "Correct!"
+      assert has_element?(view, "button[phx-click='next_step']")
+    end
+
+    test "meaning_only wrong answer shows the single correct answer", %{conn: conn} do
+      user = user_fixture()
+      conn = log_in_user(conn, user)
+
+      word = word_fixture(%{text: "食べる", meaning: "to eat", reading: "たべる"})
+      word_set = word_set_fixture(%{user_id: user.id, name: "Meaning Wrong Test"})
+      {:ok, _} = WordSets.add_word_to_set(word_set, word.id)
+
+      {:ok, _} =
+        WordSets.create_practice_test(word_set,
+          step_types: [:meaning_only],
+          max_steps_per_word: 1
+        )
+
+      word_set = WordSets.get_word_set!(word_set.id)
+      {:ok, view, _html} = live(conn, ~p"/words/sets/#{word_set.id}/test")
+
+      view
+      |> element("input[name='meaning_answer']")
+      |> render_keyup(%{"value" => "wrong"})
+
+      html =
+        view
+        |> element("button[phx-click='submit_reading_text']")
+        |> render_click()
+
+      assert html =~ "Incorrect"
+      assert html =~ "The correct answer is: to eat"
+    end
+
+    test "reading_only renders a single reading input and Enter submits", %{conn: conn} do
+      user = user_fixture()
+      conn = log_in_user(conn, user)
+
+      word = word_fixture(%{text: "食べる", meaning: "to eat", reading: "たべる"})
+      word_set = word_set_fixture(%{user_id: user.id, name: "Reading Only Test"})
+      {:ok, _} = WordSets.add_word_to_set(word_set, word.id)
+
+      {:ok, _} =
+        WordSets.create_practice_test(word_set,
+          step_types: [:reading_only],
+          max_steps_per_word: 1
+        )
+
+      word_set = WordSets.get_word_set!(word_set.id)
+
+      {:ok, view, html} = live(conn, ~p"/words/sets/#{word_set.id}/test")
+
+      assert html =~ "Type the reading:"
+      assert has_element?(view, "input[name='reading_answer']")
+      refute has_element?(view, "input[name='meaning_answer']")
+
+      view
+      |> element("input[name='reading_answer']")
+      |> render_keyup(%{"value" => "たべる"})
+
+      assert has_element?(view, "button[phx-click='submit_reading_text']:not([disabled])")
+
+      html =
+        view
+        |> element("input[name='reading_answer']")
+        |> render_keyup(%{"key" => "Enter", "value" => "たべる"})
+
+      assert html =~ "Correct!"
+      assert has_element?(view, "button[phx-click='next_step']")
+    end
+  end
 end

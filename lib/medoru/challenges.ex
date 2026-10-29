@@ -97,6 +97,13 @@ defmodule Medoru.Challenges do
   """
   def kanji_master_n4_pool, do: jlpt_pool([4, 5])
 
+  @doc """
+  The drawable pool for Kanji Master N3: ALL N3, N4 and N5 kanji with stroke
+  data, not user-specific. Same map shape and word rule as
+  `kanji_master_n5_pool/0`.
+  """
+  def kanji_master_n3_pool, do: jlpt_pool([3, 4, 5])
+
   defp jlpt_pool(jlpt_levels) do
     kanji =
       Repo.all(

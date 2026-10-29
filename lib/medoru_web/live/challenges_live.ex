@@ -19,9 +19,10 @@ defmodule MedoruWeb.ChallengesLive do
         do: %{
           "master" => Challenges.get_rank_and_score(user.id, "master"),
           "n5" => Challenges.get_rank_and_score(user.id, "n5"),
-          "n4" => Challenges.get_rank_and_score(user.id, "n4")
+          "n4" => Challenges.get_rank_and_score(user.id, "n4"),
+          "n3" => Challenges.get_rank_and_score(user.id, "n3")
         },
-        else: %{"master" => nil, "n5" => nil, "n4" => nil}
+        else: %{"master" => nil, "n5" => nil, "n4" => nil, "n3" => nil}
 
     {:ok,
      socket
@@ -29,6 +30,7 @@ defmodule MedoruWeb.ChallengesLive do
      |> assign(:leaderboard, Challenges.get_leaderboard("master"))
      |> assign(:leaderboard_n5, Challenges.get_leaderboard("n5"))
      |> assign(:leaderboard_n4, Challenges.get_leaderboard("n4"))
+     |> assign(:leaderboard_n3, Challenges.get_leaderboard("n3"))
      |> assign(:my_rank, my_rank)}
   end
 
@@ -74,6 +76,17 @@ defmodule MedoruWeb.ChallengesLive do
             leaderboard={@leaderboard_n4}
             my_rank={@my_rank["n4"]}
             path={~p"/challenges/kanji-master/n4"}
+          />
+          <.challenge_card
+            title={gettext("Kanji Master N3")}
+            description={
+              gettext(
+                "Survive the JLPT N3, N4 and N5 kanji. Everyone starts with 10 coins — no account needed!"
+              )
+            }
+            leaderboard={@leaderboard_n3}
+            my_rank={@my_rank["n3"]}
+            path={~p"/challenges/kanji-master/n3"}
           />
         </div>
       </div>
