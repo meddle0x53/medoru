@@ -10,7 +10,7 @@ import { getWindowGameData } from '../api.js'
 import { setupHighDPIWorld } from '../highDpi.js'
 
 const TAB_NAMES = ['items', 'heroCharms', 'weapons', 'abilities', 'stats']
-const TAB_LABELS = ['Items', 'Hero', 'Weapons', 'Abilities', 'Stats']
+const TAB_LABELS = ['Items', 'Hero', 'Weapons', 'Abilities', 'Run Upgrades']
 
 export default class LoadoutScene extends Phaser.Scene {
   constructor() {
@@ -1646,110 +1646,97 @@ export default class LoadoutScene extends Phaser.Scene {
     this.createActiveActionSlots()
   }
 
-  // ---------- Stats Tab ----------
+  // ---------- Run Upgrades Tab (D6: replaced the stat-allocation UI) ----------
 
-  createStatsTab() {
-    const capacity = this.player.getEffectiveCapacity()
-    const stats = [
-      { key: 'vitality', label: 'Vitality', derived: `HP: ${this.player.maxHp}` },
-      { key: 'stamina', label: 'Stamina', derived: `Max STA: ${this.player.maxStamina}` },
-      { key: 'capacity', label: 'Capacity', derived: `A:${getMaxActiveActions(capacity)} / B:${getMaxBattlePoolActions(capacity)} / O:${getMaxOverallAbilities(capacity)}` },
-      { key: 'skill', label: 'Skill', derived: `Crit: ${Math.round(this.player.getCritChance() * 100)}%` },
-      { key: 'strength', label: 'Strength', derived: `Phys Def: ${this.player.getPhysicalDefense()}` },
-      { key: 'mana', label: 'Mana', derived: `Elem Def: ${this.player.getElementalDefense()}` },
-      { key: 'luck', label: 'Luck', derived: `Infusion+: ${Math.round(this.player.getInfusionChance() * 100)}%` },
+  // Pure model of the tab content, kept separate from rendering so it stays
+  // testable headless.
+  buildRunUpgradesModel() {
+    const p = this.player
+    const capacity = p.getEffectiveCapacity()
+    const battleSelected = (p.loadout.selectedActionIds || []).filter(id => id !== 'use_item').length
+    const readouts = [
+      `Max HP: ${p.maxHp}`,
+      `Energy: ${p.maxStamina}`,
+      `Active slots: ${p.maxActiveSlots ?? getMaxActiveActions(capacity)}`,
+      `Battle pool: ${battleSelected}/${getMaxBattlePoolActions(capacity)}`,
+      `Crit: ${Math.round(p.getCritChance() * 100)}%`,
+      `Phys Def: ${p.getPhysicalDefense?.() ?? p.getTotalDefense?.() ?? 0}`,
+      `Elem Def: ${p.getElementalDefense?.() ?? 0}`,
     ]
 
-    const startY = 80
-    const rowH = 58
+    const counts = {}
+    for (const u of p.loadout.runUpgrades || []) {
+      const id = u.upgradeId || u.id
+      if (!counts[id]) counts[id] = { name: u.name, rarity: u.rarity || 'common', stacks: 0, maxStacks: u.maxStacks || 1 }
+      counts[id].stacks++
+    }
+    const upgrades = Object.values(counts)
 
-    stats.forEach((stat, i) => {
-      const y = startY + i * rowH
-      const baseVal = this.player.baseStats[stat.key]
-      // Stat allocations are cut over (Phase 4); the stats tab UI stays until
-      // Phase 5, so read the legacy key defensively.
-      const alloc = this.player.loadout.statAllocations?.[stat.key] || 0
-      const charmBonus = this.player.getCharmEffects()[stat.key] || 0
-      const total = baseVal + alloc
+    const abilityName = id => ALL_ACTIONS.find(a => a.id === id)?.name || id
+    const attunements = Object.entries(p.loadout.kanjiTiers || {}).map(([abilityId, tiers]) => ({
+      ability: abilityName(abilityId),
+      chars: Object.entries(tiers).map(([char, tier]) => ({ char, tier })),
+    })).filter(a => a.chars.length > 0)
 
-      const row = this.add.container(460, y)
+    return { readouts, upgrades, attunements }
+  }
 
-      // Background
-      const bg = this.add.graphics()
-      bg.fillStyle(0x16213e, 0.8)
-      bg.fillRoundedRect(0, 0, 460, 52, 8)
-      row.add(bg)
+  createStatsTab() {
+    const model = this.buildRunUpgradesModel()
 
-      // Label
-      row.add(
-        this.add.text(16, 14, stat.label, {
-          ...FONTS.default,
-          fontSize: '14px',
-          color: '#ecf0f1',
-        })
-      )
-
-      // Base + allocation (+ charm bonus) display
-      const charmNote = charmBonus ? ` + Charm ${charmBonus} = ${total + charmBonus}` : ''
-      row.add(
-        this.add.text(16, 32, `Base ${baseVal} + Alloc ${alloc} = ${total}${charmNote}`, {
-          ...FONTS.default,
-          fontSize: '11px',
-          color: charmBonus ? '#d4a017' : '#7f8c8d',
-        })
-      )
-
-      // Derived stat
-      row.add(
-        this.add.text(200, 26, stat.derived, {
-          ...FONTS.default,
-          fontSize: '12px',
-          color: '#3498db',
-        }).setOrigin(0, 0.5)
-      )
-
-      // + button
-      const plusBtn = this.createMiniButton(420, 26, '+', 0x27ae60, () => {
-        // Stat points are cut over (Phase 4): the button stays visible until
-        // Phase 5 but there is never anything to spend.
-        if (!(this.player.loadout.statPoints > 0)) {
-          this.showToast('No stat points available')
-          return
-        }
-        this.player.loadout.statPoints--
-        if (!this.player.loadout.statAllocations) this.player.loadout.statAllocations = {}
-        this.player.loadout.statAllocations[stat.key]++
-        // Apply immediately to player stat
-        this.player.baseStats[stat.key]++
-        this.player[stat.key] = this.player.baseStats[stat.key]
-        // Recalculate derived stats (charm-aware)
-        if (stat.key === 'vitality') {
-          this.player.recalcMaxHp()
-          if (this.mode === 'map') {
-            this.player.hp = this.player.maxHp
-          }
-        }
-        if (stat.key === 'stamina') {
-          this.player.recalcMaxStamina()
-          this.player.stamina = this.player.maxStamina
-        }
-        this.player.saveLoadout()
-        this.showTab('stats')
-      })
-      row.add(plusBtn.container)
-
-      this.tabContent.add(row)
+    // Derived readouts
+    this.tabContent.add(this.add.text(460, 56, 'Derived', {
+      ...FONTS.default, fontSize: '13px', color: '#3498db', fontStyle: 'bold',
+    }))
+    model.readouts.forEach((line, i) => {
+      this.tabContent.add(this.add.text(460 + (i % 2) * 230, 76 + Math.floor(i / 2) * 20, line, {
+        ...FONTS.default, fontSize: '12px', color: '#ecf0f1',
+      }))
     })
 
-    // Stat points remaining
-    const pointsLeft = this.player.loadout.statPoints || 0
-    this.tabContent.add(
-      this.add.text(690, 500, `Stat Points: ${pointsLeft}`, {
-        ...FONTS.default,
-        fontSize: '16px',
-        color: pointsLeft > 0 ? '#f1c40f' : '#7f8c8d',
-      }).setOrigin(0.5)
-    )
+    // Run upgrades list
+    let y = 150
+    this.tabContent.add(this.add.text(460, y - 18, 'Run Upgrades', {
+      ...FONTS.default, fontSize: '13px', color: '#3498db', fontStyle: 'bold',
+    }))
+    if (model.upgrades.length === 0) {
+      this.tabContent.add(this.add.text(460, y + 12, 'No upgrades yet — win battles or trigger rolls.', {
+        ...FONTS.default, fontSize: '12px', color: '#7f8c8d',
+      }))
+      y += 36
+    }
+    for (const u of model.upgrades) {
+      const colors = getAbilityRarityColor(u.rarity)
+      const hex = '#' + colors.main.toString(16).padStart(6, '0')
+      const stacksText = u.maxStacks > 1 ? ` ×${u.stacks}/${u.maxStacks}` : ''
+      this.tabContent.add(this.add.text(460, y, `◆ ${u.name}${stacksText}`, {
+        ...FONTS.default, fontSize: '12px', color: hex,
+      }))
+      y += 18
+    }
+
+    // Kanji attunements
+    y += 14
+    this.tabContent.add(this.add.text(460, y, 'Kanji Attunements', {
+      ...FONTS.default, fontSize: '13px', color: '#3498db', fontStyle: 'bold',
+    }))
+    y += 24
+    if (model.attunements.length === 0) {
+      this.tabContent.add(this.add.text(460, y, 'None yet.', {
+        ...FONTS.default, fontSize: '12px', color: '#7f8c8d',
+      }))
+    }
+    const TIER_COLORS = { green: '#2ecc71', blue: '#3498db', purple: '#9b59b6', silver: '#bdc3c7' }
+    for (const att of model.attunements) {
+      const charsText = att.chars.map(c => `${c.char} ${c.tier}`).join('  ·  ')
+      this.tabContent.add(this.add.text(460, y, `${att.ability}: `, {
+        ...FONTS.default, fontSize: '12px', color: '#ecf0f1',
+      }))
+      this.tabContent.add(this.add.text(460 + 130, y, charsText, {
+        ...FONTS.default, fontSize: '12px', color: TIER_COLORS[att.chars[0]?.tier] || '#ecf0f1',
+      }))
+      y += 18
+    }
   }
 
   // ---------- UI Helpers ----------
