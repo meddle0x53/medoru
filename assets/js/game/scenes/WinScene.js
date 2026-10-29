@@ -5,6 +5,7 @@ import { getCharmById } from '../data/charms.js'
 import { rollEnemyDrops } from '../data/enemies/index.js'
 import { getRewardPool, pickRewardAbilities } from '../data/abilityRewards.js'
 import WinChallengeSystem from '../systems/WinChallengeSystem.js'
+import { getKnowledgeEffects } from '../systems/UpgradeGenerator.js'
 import AbilityTooltip from '../ui/AbilityTooltip.js'
 import { setupHighDPIWorld } from '../highDpi.js'
 
@@ -29,10 +30,8 @@ export default class WinScene extends Phaser.Scene {
     this.selectedAbilityAction = null
     this.bonusAbilityPending = false
 
-    // Calculate base rewards
-    this.baseAttributePoints = (this.monster?.level || 1) + (Math.random() < (this.player.getStatValue('luck') || 0) / 50 ? 1 : 0)
+    // Calculate base rewards (stat points are gone — gamble scales gold/essence only, D1)
     this.baseGold = Math.round((this.monster?.baseGold || 5) * (1 + (this.player.getStatValue('luck') || 0) / 200))
-    this.attributePoints = this.player.applyNgPlusMultiplier(this.baseAttributePoints)
     this.goldReward = this.player.applyNgPlusMultiplier(this.baseGold)
 
     this.challengePlayed = false
@@ -118,14 +117,8 @@ export default class WinScene extends Phaser.Scene {
     const textStyle = { ...FONTS.default, fontSize: '16px', color: '#f1c40f' }
     const iconTextStyle = { ...FONTS.default, fontSize: '12px', color: '#1a1a2e', fontStyle: 'bold' }
 
-    const pointsY = hasEssence ? y - 25 : y - 15
-    const goldY = hasEssence ? y : y + 5
-    const essenceY = y + 25
-
-    // Attribute Points icon (gold circle with "P")
-    this.add.circle(leftX, pointsY, 11, 0xf1c40f).setStrokeStyle(2, 0xffffff)
-    this.add.text(leftX, pointsY, 'P', iconTextStyle).setOrigin(0.5)
-    this.pointsText = this.add.text(leftX + 20, pointsY, `+${this.attributePoints}`, textStyle).setOrigin(0, 0.5)
+    const goldY = hasEssence ? y - 10 : y
+    const essenceY = y + 20
 
     // Gold icon (gold coin with "$")
     this.add.circle(leftX, goldY, 11, 0xf1c40f).setStrokeStyle(2, 0xffffff)
@@ -254,9 +247,8 @@ export default class WinScene extends Phaser.Scene {
     }).setOrigin(0.5))
 
     const known = this.player.hasAbility(action.id)
-    const isSingleUse = action.singleUse
-    const rewardLabel = isSingleUse && known ? '+1 Use' : known ? 'Known' : 'Click to learn'
-    const rewardColor = isSingleUse && known ? '#f1c40f' : known ? '#e74c3c' : '#2ecc71'
+    const rewardLabel = known ? 'Known' : 'Click to learn'
+    const rewardColor = known ? '#e74c3c' : '#2ecc71'
     container.add(this.add.text(0, 32, rewardLabel, {
       ...FONTS.default,
       fontSize: '10px',
@@ -343,7 +335,7 @@ export default class WinScene extends Phaser.Scene {
       this.player.addGold(this.goldReward)
       if (this.tile?.id) this.player.completeTile(this.tile.id)
       this.player.saveLoadout()
-      const column = this.battleRewardColumn()
+      const column = this.battleRewardColumn() + (getKnowledgeEffects(this.player).columnBonus || 0)
       const luck = this.player.getStatValue('luck') || 0
       const tier = this.player.rollBattleRewardTier(column, luck)
       this.scene.start('UpgradeScene', { player: this.player, returnScene: 'MapScene', mapIndex: this.mapIndex ?? 0, tier })
@@ -356,22 +348,6 @@ export default class WinScene extends Phaser.Scene {
     if (this.abilitySelected) return
 
     this.selectedAbilityAction = action
-
-    // Single-use abilities can be collected again to gain extra charges.
-    if (action.singleUse) {
-      if (!this.player.hasAbility(action.id)) {
-        const result = this.player.learnAbility(action.id)
-        if (!result.ok) {
-          this.showToast(result.reason)
-          this.selectedAbilityAction = null
-          return
-        }
-      }
-      this.showToast(`${action.name} learned`)
-      const bonusName = this.bonusAbilityPending ? this.grantBonusAbility(action.type) : null
-      this.markAbilitySelected(`${action.name} learned`, bonusName)
-      return
-    }
 
     if (this.player.hasAbility(action.id)) {
       this.showToast('You already know this ability')
@@ -432,16 +408,6 @@ export default class WinScene extends Phaser.Scene {
     if (!bonus) {
       this.showToast('No matching bonus ability available')
       return null
-    }
-
-    if (bonus.singleUse) {
-      const result = this.player.learnAbility(bonus.id)
-      if (!result.ok) {
-        this.showToast(result.reason)
-        return null
-      }
-      this.showToast(`Bonus: ${bonus.name} +1 use`)
-      return `${bonus.name} +1 use`
     }
 
     if (this.player.hasAbility(bonus.id)) {
@@ -632,10 +598,8 @@ export default class WinScene extends Phaser.Scene {
   // D1: the gamble scales gold and essence — never stat points.
   applyChallengeResult(result) {
     this.challengeMultiplier = result.multiplier
-    this.attributePoints = this.player.applyNgPlusMultiplier(this.baseAttributePoints)
     this.goldReward = this.player.applyNgPlusMultiplier(Math.round(this.baseGold * this.challengeMultiplier))
 
-    this.pointsText.setText(`+${this.attributePoints}`)
     this.goldText.setText(`+${this.goldReward}`)
 
     if (this.essenceGained > 0) {

@@ -268,6 +268,7 @@ export default class Player extends Character {
       staminaFlatBonus: 0,
       activeSlotBonus: 0,
       weaponProfileOverride: null,
+      shieldProfileOverride: null,
       kanjiTiers: {},
       gold: 0,
       inventory: {},
@@ -388,6 +389,19 @@ export default class Player extends Character {
     return applySocketScaling(this.getBaseScaling(), this.weapon)
   }
 
+  // Shield counterpart of getEffectiveScaling(): a shield_profile upgrade
+  // card overrides the shield's base scaling with the charm's block.
+  getEffectiveShieldScaling() {
+    const overrideId = this.loadout?.shieldProfileOverride
+    if (overrideId) {
+      const charm = getSocketCharmById(overrideId)
+      if (charm?.scaling) {
+        return applySocketScaling({}, { socketCharmIds: [overrideId], level: this.shield?.level || 0 })
+      }
+    }
+    return getEffectiveScaling(this.shield)
+  }
+
   calculateWeaponDamage(action = null) {
     const w = this.weapon
     if (!w) return 0
@@ -480,7 +494,7 @@ export default class Player extends Character {
     let bonus = 0
 
     // Apply effective scaling (base + socket charm overrides)
-    for (const [stat, grade] of Object.entries(getEffectiveScaling(s))) {
+    for (const [stat, grade] of Object.entries(this.getEffectiveShieldScaling())) {
       const multiplier = SCALING_MULTIPLIERS[grade] || 0
       const statValue = this.getStatValue(stat)
       const factor = getStatFactor(statValue)
@@ -519,7 +533,7 @@ export default class Player extends Character {
 
     const shieldBase = shield.baseDefense || 0
     let scaling = 0
-    for (const [stat, grade] of Object.entries(getEffectiveScaling(shield))) {
+    for (const [stat, grade] of Object.entries(this.getEffectiveShieldScaling())) {
       const multiplierGrade = SCALING_MULTIPLIERS[grade] || 0
       const statValue = this.getStatValue(stat)
       const factor = getStatFactor(statValue)
@@ -843,6 +857,7 @@ export default class Player extends Character {
         if (typeof loadout.staminaFlatBonus !== 'number') loadout.staminaFlatBonus = 0
         if (typeof loadout.activeSlotBonus !== 'number') loadout.activeSlotBonus = 0
         if (loadout.weaponProfileOverride === undefined) loadout.weaponProfileOverride = null
+        if (loadout.shieldProfileOverride === undefined) loadout.shieldProfileOverride = null
         delete loadout.activeRoll
         if (!loadout.kanjiTiers || typeof loadout.kanjiTiers !== 'object') loadout.kanjiTiers = {}
         if (!loadout.rollInventory || typeof loadout.rollInventory !== 'object') {
@@ -1680,6 +1695,7 @@ export default class Player extends Character {
       staminaFlatBonus: 0,
       activeSlotBonus: 0,
       weaponProfileOverride: null,
+      shieldProfileOverride: null,
       kanjiTiers: {},
       gold: meta.startingGoldBonus || 0,
       inventory: {},

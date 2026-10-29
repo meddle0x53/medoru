@@ -1,6 +1,6 @@
 import { GAME_CONFIG, FONTS } from '../config.js'
 import { setupHighDPIWorld } from '../highDpi.js'
-import { generateChoices } from '../systems/UpgradeGenerator.js'
+import { generateChoices, getKnowledgeEffects, bumpTier } from '../systems/UpgradeGenerator.js'
 import { apply, countUpgrade } from '../systems/UpgradeEngine.js'
 import { getAbilityRarityColor } from '../data/actions.js'
 import WinChallengeSystem from '../systems/WinChallengeSystem.js'
@@ -34,8 +34,10 @@ export default class UpgradeScene extends Phaser.Scene {
     this.mapIndex = data.mapIndex ?? 0
     // The screen's tier comes from the caller (D12): a triggered roll passes
     // its tier; battle drops roll it via player.rollBattleRewardTier().
-    this.tier = data.tier || 'common'
-    this.rerollsLeft = 1
+    // Enlightenment raises every opened screen one rarity band.
+    const knowledge = getKnowledgeEffects(data.player)
+    this.tier = knowledge.tierBump ? bumpTier(data.tier || 'common') : (data.tier || 'common')
+    this.rerollsLeft = 1 + knowledge.curiosity
     this.challengeSystem = null
     this.cards = []
     this.chosen = false

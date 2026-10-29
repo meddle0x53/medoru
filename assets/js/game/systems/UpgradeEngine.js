@@ -89,6 +89,10 @@ export function apply(player, upgradeId) {
       loadout.weaponProfileOverride = effect.charmId || null
       break
     }
+    case 'shield_profile': {
+      loadout.shieldProfileOverride = effect.charmId || null
+      break
+    }
     case 'unlock_ability': {
       const learned = player.learnAbility(effect.abilityId)
       if (!learned.ok) return learned
@@ -97,6 +101,11 @@ export function apply(player, upgradeId) {
     case 'ability_modifier': {
       // Nothing to precompute: getEffectiveAbility() reads the modifier
       // from loadout.runUpgrades at use time.
+      break
+    }
+    case 'knowledge': {
+      // Read-side consumer: UpgradeGenerator/UpgradeScene/WinScene query
+      // the knowledge effects from loadout.runUpgrades at use time.
       break
     }
     case 'kanji_tier_up': {
