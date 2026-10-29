@@ -260,10 +260,32 @@ Loadout/Prepare chips and open the same screen immediately.
    **kanji attunement cards** (D11, random pool kanji +1 tier).
 3. Knowledge effects: `rerollsLeft` per screen = 1 + Curiosity; Memory /
    Recall / Perfect Recall / Enlightenment as generator/scene params.
+   **Chosen semantics** (design doc under-specified; implemented as):
+   - `curiosity` (uncommon, ×3): +1 kanji reroll per upgrade screen.
+   - `memory` (uncommon): screens offer **4 cards** instead of 3 (generator).
+   - `recall` (rare, needs memory): tag-match weight doubles 0.5 → 1.0
+     (generator weighting).
+   - `perfect_recall` (rare, needs recall): battle-drop tier rolls as if
+     +2 map columns deeper (WinScene passes the bonus into
+     `rollBattleRewardTier`).
+   - `enlightenment` (epic, needs perfect_recall): every opened screen is
+     raised one rarity band, capped at epic (UpgradeScene init).
 4. **Balance pass:** rarity weights, D4 frequency, roll prices
    (5/10/18/25 scales · 50/100/180/250 gold), scales/gold income pacing,
    **stamina-cost rebalance for former single-use abilities** (D10),
    **kanji tier multipliers** (D11).
+   **Chosen numbers:** stamina rebalance = remove all `singleUse` flags and
+   raise costs (quick_stab 2→4, shield_bash 2→4, raise_shield 2→3,
+   sword_buff 3→5, sheathe_blade 3→5, infuse_* 2→3, heavy_slash 4→6,
+   guard_break 5→6, taunt 5→6, zen 5→6, two_hand_heavy 5→7, dash 6→7,
+   berserk 8→9). Kanji multipliers kept (×1.0/1.15/1.3/1.5): a stacked
+   silver-perfect crit forward slash (~70-75 dmg) does not one-shot a
+   ~260 HP boss. Roll prices kept: ~5 levels/victories of scales income per
+   common roll, ~2-4 battles of gold income per common roll at camp.
+   **Generator change:** rarity bands now fall back one band when the band
+   has no applicable cards (e.g. every epic still locked behind its
+   prerequisite chain) instead of returning an empty screen; mutually
+   exclusive conversion cards are never offered on the same screen.
 
 ---
 

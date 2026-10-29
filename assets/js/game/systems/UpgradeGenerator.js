@@ -27,16 +27,45 @@ export const RARITY_WEIGHTS = { common: 55, uncommon: 30, rare: 12, epic: 3 }
 export const RARITY_ORDER = ['common', 'uncommon', 'rare', 'epic']
 
 const TAG_MATCH_WEIGHT = 0.5
+const RECALL_TAG_MATCH_WEIGHT = 1.0
 const QUALITY_REROLL_ATTEMPTS = 2
 
-// Rarity band floors for the reserved slot (uncommon+ / rare+ / epic-only).
-function bandForTier(tier) {
-  switch (tier) {
-    case 'uncommon': return ['uncommon', 'rare', 'epic']
-    case 'rare': return ['rare', 'epic']
-    case 'epic': return ['epic']
-    default: return RARITY_ORDER
+// Knowledge cards (Phase 5) are read-side consumers of loadout.runUpgrades:
+//   curiosity       — +1 reroll per upgrade screen (UpgradeScene)
+//   memory          — screens offer one extra card (generator)
+//   recall          — tag-match weight doubles (generator)
+//   perfect_recall  — battle screens roll +2 columns deeper (WinScene)
+//   enlightenment   — every opened screen bumps one rarity tier (UpgradeScene)
+export function getKnowledgeEffects(player) {
+  const owned = player.loadout?.runUpgrades || []
+  const count = id => owned.filter(u => (u.upgradeId || u.id) === id).length
+  return {
+    curiosity: count('curiosity'),
+    extraCards: count('memory') > 0 ? 1 : 0,
+    tagWeight: count('recall') > 0 ? RECALL_TAG_MATCH_WEIGHT : TAG_MATCH_WEIGHT,
+    columnBonus: count('perfect_recall') > 0 ? 2 : 0,
+    tierBump: count('enlightenment') > 0 ? 1 : 0,
   }
+}
+
+const TIER_BUMP = { common: 'uncommon', uncommon: 'rare', rare: 'epic', epic: 'epic' }
+export function bumpTier(tier) {
+  return TIER_BUMP[tier] || 'common'
+}
+
+// Rarity band floors for the reserved slot (uncommon+ / rare+ / epic-only).
+// Fallback chains: when a band has no applicable cards (e.g. every epic is
+// still locked behind its prerequisite chain), drop one band instead of
+// returning an empty screen.
+const BAND_FALLBACKS = {
+  common: [RARITY_ORDER],
+  uncommon: [['uncommon', 'rare', 'epic'], RARITY_ORDER],
+  rare: [['rare', 'epic'], ['uncommon', 'rare', 'epic'], RARITY_ORDER],
+  epic: [['epic'], ['rare', 'epic'], RARITY_ORDER],
+}
+
+function bandsForTier(tier) {
+  return BAND_FALLBACKS[tier] || BAND_FALLBACKS.common
 }
 
 // ---------- Validity ----------
@@ -101,7 +130,8 @@ function playerTagSources(player) {
 export function computeWeight(player, card) {
   const sources = playerTagSources(player)
   const matches = (card.tags || []).filter(tag => sources.has(tag)).length
-  return 1 + matches * TAG_MATCH_WEIGHT
+  const tagWeight = getKnowledgeEffects(player).tagWeight
+  return 1 + matches * tagWeight
 }
 
 // ---------- Picking ----------
@@ -152,24 +182,39 @@ function pickCard(player, band, excludeIds) {
  * `tier` is the consumed roll tier ('common' default).
  */
 export function generateChoices(player, tier = 'common') {
-  const band = bandForTier(tier)
   const choices = []
   const excludeIds = new Set()
 
-  // Slot 1: reserved for the roll's rarity floor (normal table for common).
-  // When the band is exhausted the floor cannot be honored — return nothing
-  // rather than a sub-floor screen (Phase 3 gates on emptiness).
-  const first = pickCard(player, band, excludeIds)
-  if (!first) return []
-  choices.push(first)
-  excludeIds.add(first.card.id)
+  // Register a chosen card's id and exclusions so mutually exclusive cards
+  // (the weapon/shield conversion routes) never appear on the same screen.
+  const registerExclusions = pick => {
+    excludeIds.add(pick.card.id)
+    for (const ex of pick.card.excludes || []) excludeIds.add(ex)
+  }
+  const addChoice = pick => {
+    choices.push(pick)
+    registerExclusions(pick)
+  }
 
-  // Slots 2–3: normal table.
-  for (let i = choices.length; i < 3; i++) {
+  // Slot 1: reserved for the roll's rarity floor (normal table for common).
+  // When a band has no applicable cards (all owned, or every card still
+  // locked behind a prerequisite chain), fall back one band rather than
+  // returning an empty screen; empty only when nothing valid remains at all.
+  let band = RARITY_ORDER
+  let first = null
+  for (const candidateBand of bandsForTier(tier)) {
+    first = pickCard(player, candidateBand, excludeIds)
+    if (first) { band = candidateBand; break }
+  }
+  if (!first) return []
+  addChoice(first)
+
+  // Slots 2–3 (or 2–4 with Memory): normal table.
+  const targetCount = 3 + getKnowledgeEffects(player).extraCards
+  for (let i = choices.length; i < targetCount; i++) {
     const pick = pickCard(player, RARITY_ORDER, excludeIds)
     if (!pick) break
-    choices.push(pick)
-    excludeIds.add(pick.card.id)
+    addChoice(pick)
   }
 
   // Card quality rule: a screen of one family with no ability modifier gets
@@ -183,13 +228,14 @@ export function generateChoices(player, tier = 'common') {
     const lowestIndex = choices.reduce((best, c, i) => (c.weight < choices[best].weight ? i : best), 0)
     const lowest = choices[lowestIndex]
     excludeIds.delete(lowest.card.id)
+    for (const ex of lowest.card.excludes || []) excludeIds.delete(ex)
     // Never violate the reserved slot's rarity floor when rerolling it.
     const rerollBand = lowestIndex === 0 ? band : RARITY_ORDER
     const replacement = pickCard(player, rerollBand, excludeIds)
     excludeIds.add(lowest.card.id)
     if (!replacement) break
     choices[lowestIndex] = replacement
-    excludeIds.add(replacement.card.id)
+    registerExclusions(replacement)
   }
 
   return choices.map(c => c.card)
