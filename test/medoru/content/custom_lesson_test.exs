@@ -153,6 +153,35 @@ defmodule Medoru.Content.CustomLessonTest do
       assert hd(result.lessons).custom_lesson_id == lesson.id
     end
 
+    test "custom_lesson_published_in_classroom?/2 works beyond the first page of 20", %{
+      teacher: teacher,
+      classroom: classroom
+    } do
+      lessons =
+        for i <- 1..21 do
+          {:ok, lesson} =
+            Content.create_custom_lesson(%{title: "Lesson #{i}", creator_id: teacher.id})
+
+          {:ok, _} = Content.publish_lesson_to_classroom(lesson.id, classroom.id, teacher.id)
+          lesson
+        end
+
+      result = Content.list_classroom_custom_lessons(classroom.id)
+      assert result.total_count == 21
+      # Page 1 only contains 20 lessons
+      assert length(result.lessons) == 20
+
+      # But the 21st lesson is still published and must be accessible
+      lesson_21 = List.last(lessons)
+      assert Content.custom_lesson_published_in_classroom?(classroom.id, lesson_21.id)
+      assert Content.custom_lesson_published_in_classroom?(classroom.id, hd(lessons).id)
+
+      # Unpublished lessons are not accessible
+      pub = Content.list_lesson_classroom_publications(lesson_21.id)
+      {:ok, _} = Content.unpublish_lesson_from_classroom(hd(pub), teacher.id)
+      refute Content.custom_lesson_published_in_classroom?(classroom.id, lesson_21.id)
+    end
+
     test "complete_custom_lesson/3 awards points", %{
       classroom: classroom,
       student: student,

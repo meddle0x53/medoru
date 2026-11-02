@@ -45,15 +45,7 @@ defmodule MedoruWeb.ClassroomLive.CustomLessonTest do
     lesson = Content.get_custom_lesson_with_words!(lesson_id)
 
     # Verify lesson is published to this classroom
-    result = Content.list_classroom_custom_lessons(classroom_id)
-    lesson_ids = Enum.map(result.lessons, fn pc -> pc.custom_lesson_id end)
-
-    if lesson_id not in lesson_ids do
-      {:ok,
-       socket
-       |> put_flash(:error, gettext("This lesson is not available in this classroom."))
-       |> push_navigate(to: ~p"/classrooms/#{classroom_id}")}
-    else
+    if Content.custom_lesson_published_in_classroom?(classroom_id, lesson_id) do
       # Check if test is required and exists
       if not lesson.requires_test or is_nil(lesson.test_id) do
         {:ok,
@@ -103,6 +95,11 @@ defmodule MedoruWeb.ClassroomLive.CustomLessonTest do
           end
         end
       end
+    else
+      {:ok,
+       socket
+       |> put_flash(:error, gettext("This lesson is not available in this classroom."))
+       |> push_navigate(to: ~p"/classrooms/#{classroom_id}")}
     end
   end
 

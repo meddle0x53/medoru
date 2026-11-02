@@ -129,15 +129,7 @@ defmodule MedoruWeb.ClassroomLive.CustomLesson do
     lesson = Content.get_custom_lesson!(lesson_id)
 
     # Verify lesson is published to this classroom
-    result = Content.list_classroom_custom_lessons(classroom_id)
-    lesson_ids = Enum.map(result.lessons, fn pc -> pc.custom_lesson_id end)
-
-    if lesson_id not in lesson_ids do
-      {:ok,
-       socket
-       |> put_flash(:error, gettext("This lesson is not available in this classroom."))
-       |> push_navigate(to: ~p"/classrooms/#{classroom_id}")}
-    else
+    if Content.custom_lesson_published_in_classroom?(classroom_id, lesson_id) do
       is_anonymous = is_nil(user)
 
       # Get existing progress (skip for anonymous users)
@@ -174,6 +166,11 @@ defmodule MedoruWeb.ClassroomLive.CustomLesson do
           step
         )
       end
+    else
+      {:ok,
+       socket
+       |> put_flash(:error, gettext("This lesson is not available in this classroom."))
+       |> push_navigate(to: ~p"/classrooms/#{classroom_id}")}
     end
   end
 

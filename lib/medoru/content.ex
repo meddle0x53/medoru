@@ -3264,6 +3264,31 @@ defmodule Medoru.Content do
   end
 
   @doc """
+  Checks whether a custom lesson is published (active) in a classroom.
+
+  Unlike `list_classroom_custom_lessons/2`, this is not paginated, so it
+  works for classrooms with more lessons than one page.
+
+  ## Examples
+
+      iex> custom_lesson_published_in_classroom?(classroom_id, lesson_id)
+      true
+
+  """
+  def custom_lesson_published_in_classroom?(classroom_id, lesson_id) do
+    ClassroomCustomLesson
+    |> where(
+      [ccl],
+      ccl.classroom_id == ^classroom_id and
+        ccl.custom_lesson_id == ^lesson_id and
+        ccl.status == "active"
+    )
+    |> join(:inner, [ccl], cl in assoc(ccl, :custom_lesson))
+    |> where([ccl, cl], cl.status != "archived")
+    |> Repo.exists?()
+  end
+
+  @doc """
   Gets a classroom custom lesson by ID.
 
   ## Examples
