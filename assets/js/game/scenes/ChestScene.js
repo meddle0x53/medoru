@@ -251,9 +251,6 @@ export default class ChestScene extends Phaser.Scene {
         case 'charm':
           lines.push(`✨ Charm: ${reward.charm.name}`)
           break
-        case 'statPoint':
-          lines.push('🌟 +1 Stat Point')
-          break
         case 'upgrade':
           lines.push(`${reward.option.icon} ${reward.option.name} +${reward.option.nextLevel}`)
           break
