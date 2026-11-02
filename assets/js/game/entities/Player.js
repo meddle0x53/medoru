@@ -12,7 +12,7 @@ import { sendRunResult, uploadSaveData } from '../api.js'
 export function loadoutKey() {
   return window.gameData?.devMode ? 'medoru_loadout_v1' : 'medoru_loadout_public_v1'
 }
-const MAP_VERSION = 6
+const MAP_VERSION = 7
 
 // Roll prices by currency (Rolls meta-progression; see docs/PLAN-roguelike-implementation.md)
 export const ROLL_TIERS = ['common', 'uncommon', 'rare', 'epic']
@@ -1158,7 +1158,12 @@ export default class Player extends Character {
   }
 
   recalcMaxStamina() {
-    this.maxStamina = 8 + Math.floor(this.getStatValue('stamina') / 3) + (this.loadout?.staminaFlatBonus || 0)
+    // The previously dead `staminaRegen` charm key (Kitsune Tail Charm,
+    // Charm of Water) is converted to bonus max Energy per turn — stamina
+    // already refills to full at turn start, so a literal regen proc would
+    // be a no-op (design delta #11).
+    const regenBonus = this.getCharmEffects().staminaRegen || 0
+    this.maxStamina = 8 + Math.floor(this.getStatValue('stamina') / 3) + (this.loadout?.staminaFlatBonus || 0) + regenBonus
   }
 
   // Stats are canonical in baseStats (allocations are folded into it).

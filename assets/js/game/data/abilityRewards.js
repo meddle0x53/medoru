@@ -115,10 +115,6 @@ export function getRewardPool(playerOrClass = 'warrior', weaponName, shieldName)
  * If a tile is provided, abilities are weighted by their rarity using the
  * tile's column and type.
  */
-function isSingleUseAbility(id) {
-  const action = ALL_ACTIONS.find(a => a.id === id)
-  return action?.singleUse === true
-}
 
 function weightedPickId(ids, weights) {
   if (!weights) {
@@ -148,8 +144,7 @@ export function pickRewardAbilities(pool, count, alreadyKnownIds = [], tile = nu
   const weights = getRarityWeightsForTile(tile)
   const known = new Set(alreadyKnownIds)
   const picks = []
-  // Single-use abilities can be rewarded again to add charges; multi-use abilities are only offered once.
-  const isEligible = (id) => !known.has(id) || isSingleUseAbility(id)
+  // Abilities are only offered once (charges are gone — D10).
   const notPicked = (id) => !picks.includes(id)
 
   const categories = ['weapon', 'shield', 'class']

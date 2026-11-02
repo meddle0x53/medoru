@@ -11,7 +11,6 @@ const RARITY_WEIGHTS = {
 
 const ABILITY_CHARM_CHANCE = 0.90
 const UPGRADE_CHANCE = 0.10
-const STAT_POINT_CHANCE = 0.05
 
 export function openChest(player) {
   const mult = player.getNgPlusMultiplier()
@@ -39,14 +38,6 @@ export function openChest(player) {
   // 3. Ability or weapon charm.
   if (Math.random() < scaleChance(ABILITY_CHARM_CHANCE)) {
     grantAbilityOrCharmReward(player, rewards, mult)
-  }
-
-  // 4. Stat point.
-  if (Math.random() < scaleChance(STAT_POINT_CHANCE)) {
-    const points = scaleValue(1)
-    player.loadout.statPoints = (player.loadout.statPoints || 0) + points
-    player.saveLoadout()
-    rewards.push({ type: 'statPoint', value: points })
   }
 
   return rewards

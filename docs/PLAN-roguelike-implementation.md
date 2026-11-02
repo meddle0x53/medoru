@@ -295,10 +295,21 @@ Loadout/Prepare chips and open the same screen immediately.
    gamble point multiplier, `statPoints` HUD counter) and the charges
    remnants (`singleUseCharges` save key, `consumeAbilityCharge`/
    `addAbilityCharges`, WinScene "+1 use" collect path).
+   **Done (Phase 6):** also removed the `ChestRewards` stat-point grant (and
+   its ChestScene display line) and the dead `isSingleUseAbility` filter in
+   `abilityRewards.js`. The loadout-migration `delete`s for the old keys were
+   kept — harmless one-liners that also clean saves written between versions.
 2. Dead effect cleanup: wire `staminaRegen` charms to a turn-start regen proc
    (`SocketProcSystem` pattern) or convert them to `staminaFlatBonus`.
-3. Bump `MAP_VERSION` (stale localStorage saves get a fresh run).
-4. Cache bump + bundle + deploy.
+   **Done (Phase 6), converted:** stamina already refills to max at turn
+   start (`Character.resetForTurn`), so a literal turn-start regen proc is a
+   no-op. The `staminaRegen` charm key (Kitsune Tail Charm +2, Charm of
+   Water +1) now adds to max Energy via `recalcMaxStamina`. The socket-charm
+   `regen_stamina` *proc* (Wind Spirit Charm) was already wired through
+   `SocketProcSystem` and is untouched.
+3. Bump `MAP_VERSION` (stale localStorage saves get a fresh run). **6 → 7.**
+4. Cache bump + bundle + deploy. **Done (Phase 6):** `?v=604` in both game
+   HEEx templates, service-worker precache bumped, `CACHE_NAME medoru-v570`.
 
 ---
 
