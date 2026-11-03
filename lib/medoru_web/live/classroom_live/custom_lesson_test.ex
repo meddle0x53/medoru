@@ -157,44 +157,48 @@ defmodule MedoruWeb.ClassroomLive.CustomLessonTest do
   def handle_event("submit_answer", _params, socket) do
     step = socket.assigns.current_step
 
-    answer =
-      if step.question_type == :writing_fill_in do
-        answers = socket.assigns.selected_answer || %{}
-
-        WritingFillInComponents.build_filled_sentence(
-          step.question_data["template"] || "",
-          answers
-        )
-      else
-        socket.assigns.selected_answer
-      end
-
-    if is_nil(answer) or answer == "" do
-      {:noreply, put_flash(socket, :error, gettext("Please enter an answer"))}
+    if step.question_type == :grammar_make_question_answer do
+      submit_make_question_answer(socket, step)
     else
-      session = socket.assigns.session
+      answer =
+        if step.question_type == :writing_fill_in do
+          answers = socket.assigns.selected_answer || %{}
 
-      # Determine correctness based on question type
-      is_correct = check_answer_correctness(answer, step)
+          WritingFillInComponents.build_filled_sentence(
+            step.question_data["template"] || "",
+            answers
+          )
+        else
+          socket.assigns.selected_answer
+        end
 
-      # Record answer
-      attrs = %{
-        answer: answer,
-        time_spent_seconds: 10,
-        step_index: session.current_step_index,
-        is_correct: is_correct
-      }
+      if is_nil(answer) or answer == "" do
+        {:noreply, put_flash(socket, :error, gettext("Please enter an answer"))}
+      else
+        session = socket.assigns.session
 
-      case Tests.record_step_answer(session.id, step.id, attrs, locale: socket.assigns.locale) do
-        {:ok, step_answer} ->
-          if step_answer.is_correct do
-            handle_correct_answer(socket, step)
-          else
-            handle_incorrect_answer(socket, step)
-          end
+        # Determine correctness based on question type
+        is_correct = check_answer_correctness(answer, step)
 
-        {:error, _reason} ->
-          {:noreply, put_flash(socket, :error, gettext("Error recording answer"))}
+        # Record answer
+        attrs = %{
+          answer: answer,
+          time_spent_seconds: 10,
+          step_index: session.current_step_index,
+          is_correct: is_correct
+        }
+
+        case Tests.record_step_answer(session.id, step.id, attrs, locale: socket.assigns.locale) do
+          {:ok, step_answer} ->
+            if step_answer.is_correct do
+              handle_correct_answer(socket, step)
+            else
+              handle_incorrect_answer(socket, step)
+            end
+
+          {:error, _reason} ->
+            {:noreply, put_flash(socket, :error, gettext("Error recording answer"))}
+        end
       end
     end
   end
@@ -206,6 +210,15 @@ defmodule MedoruWeb.ClassroomLive.CustomLessonTest do
     value =
       params["value"] ||
         get_in(params, ["writing_fill_in_answer", to_string(index)]) || ""
+
+    current = socket.assigns.selected_answer || %{}
+    {:noreply, assign(socket, :selected_answer, Map.put(current, index, value))}
+  end
+
+  @impl true
+  def handle_event("update_make_question_answer", params, socket) do
+    index = params["index"]
+    value = params["value"] || ""
 
     current = socket.assigns.selected_answer || %{}
     {:noreply, assign(socket, :selected_answer, Map.put(current, index, value))}
@@ -278,6 +291,46 @@ defmodule MedoruWeb.ClassroomLive.CustomLessonTest do
   def handle_event("wrong_stroke", _params, socket) do
     # Wrong stroke drawn - hook shows hint locally, no server action needed
     {:noreply, socket}
+  end
+
+  defp submit_make_question_answer(socket, step) do
+    answers = socket.assigns.selected_answer || %{}
+    question = answers["0"] || ""
+    answer = answers["1"] || ""
+
+    if String.trim(question) == "" or String.trim(answer) == "" do
+      {:noreply, put_flash(socket, :error, gettext("Please enter both a question and an answer"))}
+    else
+      session = socket.assigns.session
+      combined = Medoru.Tests.TestStepAnswer.build_make_question_answer(question, answer)
+
+      {is_correct, points_earned} =
+        Medoru.Tests.TestStepAnswer.grade_make_question_answer(
+          combined,
+          step.question_data || %{},
+          step.points
+        )
+
+      attrs = %{
+        answer: combined,
+        time_spent_seconds: 15,
+        step_index: session.current_step_index,
+        is_correct: is_correct,
+        points_earned: points_earned
+      }
+
+      case Tests.record_step_answer(session.id, step.id, attrs, locale: socket.assigns.locale) do
+        {:ok, _step_answer} ->
+          if is_correct do
+            handle_correct_answer(socket, step)
+          else
+            handle_incorrect_answer(socket, step)
+          end
+
+        {:error, _reason} ->
+          {:noreply, put_flash(socket, :error, gettext("Error recording answer"))}
+      end
+    end
   end
 
   # Check if answer is correct based on question type
@@ -975,6 +1028,72 @@ defmodule MedoruWeb.ClassroomLive.CustomLessonTest do
                       input_event="update_writing_fill_in"
                       disabled={@feedback != nil}
                     />
+
+                    <button
+                      type="button"
+                      phx-click="submit_answer"
+                      disabled={@feedback != nil}
+                      class="w-full btn btn-primary"
+                    >
+                      {gettext("Submit Answer")}
+                    </button>
+                  <% :grammar_make_question_answer -> %>
+                    <% qd = @current_step.question_data || %{}
+                    answers = @selected_answer || %{}
+                    mqa_examples = List.wrap(qd["examples"]) |> Enum.reject(&(&1 == "")) %>
+                    <div class="space-y-6 mb-6">
+                      <%= if mqa_examples != [] do %>
+                        <div class="bg-base-200 rounded-xl p-4 space-y-2">
+                          <div class="text-sm text-secondary mb-1">{gettext("例")}</div>
+                          <%= for example <- mqa_examples do %>
+                            <div class="font-jp text-base-content">
+                              <%= for line <- String.split(example, "\n") do %>
+                                <div>{line}</div>
+                              <% end %>
+                            </div>
+                          <% end %>
+                        </div>
+                      <% end %>
+
+                      <%= if qd["requirement"] && qd["requirement"] != "" do %>
+                        <div class="bg-base-200 rounded-xl p-4">
+                          <div class="text-sm text-secondary mb-1">{gettext("Requirement")}</div>
+                          <div class="text-lg font-jp text-base-content">{qd["requirement"]}</div>
+                        </div>
+                      <% end %>
+
+                      <div>
+                        <label class="block text-sm text-secondary mb-2">
+                          {gettext("Write your question")}
+                        </label>
+                        <input
+                          type="text"
+                          name="make_question_answer[0]"
+                          value={answers["0"]}
+                          placeholder={gettext("Type your question here...")}
+                          class="input input-bordered w-full font-jp text-lg"
+                          phx-change="update_make_question_answer"
+                          phx-value-index="0"
+                          phx-debounce="100"
+                        />
+                      </div>
+
+                      <div>
+                        <label class="block text-sm text-secondary mb-2">
+                          {gettext("Write your answer")}
+                        </label>
+                        <input
+                          type="text"
+                          name="make_question_answer[1]"
+                          value={answers["1"]}
+                          placeholder={gettext("Type your answer here...")}
+                          class="input input-bordered w-full font-jp text-lg"
+                          phx-change="update_make_question_answer"
+                          phx-value-index="1"
+                          phx-debounce="100"
+                        />
+                      </div>
+                    </div>
 
                     <button
                       type="button"

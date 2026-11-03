@@ -170,13 +170,13 @@
                 total: @total_steps
               )}
             </span>
-            <% progress = round(@step_number / @total_steps * 100) %>
+            <% progress = round((@step_number - 1) / @total_steps * 100) %>
             <span class="text-secondary">{progress}{"%"} {gettext("complete")}</span>
           </div>
           <div class="h-1.5 sm:h-2 bg-base-200 rounded-full overflow-hidden">
             <div
               class="h-full bg-primary transition-all duration-300"
-              style={"width: #{@step_number / @total_steps * 100}%"}
+              style={"width: #{(@step_number - 1) / @total_steps * 100}%"}
             >
             </div>
           </div>

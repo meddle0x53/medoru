@@ -1131,6 +1131,26 @@ body:has(.classroom-chat-tab) footer {
     position: relative;
     z-index: 1;
   }
+
+  /* Test results export: print only the export panel */
+  .test-results-container > :not(.test-results-export-wrapper) {
+    display: none !important;
+  }
+
+  .test-results-export-wrapper {
+    position: static !important;
+    left: auto !important;
+    width: auto !important;
+  }
+}
+
+/* Off-screen (but rendered) export panel so PNG capture and print work
+   even when the on-screen preview toggle is off. */
+.export-panel-hidden {
+  position: absolute;
+  left: -10000px;
+  top: 0;
+  width: 800px;
 }
 
 /* Kanji Master HUD feedback animations */

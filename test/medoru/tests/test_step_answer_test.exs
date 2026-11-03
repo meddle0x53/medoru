@@ -184,4 +184,73 @@ defmodule Medoru.Tests.TestStepAnswerTest do
       assert Ecto.Changeset.get_field(changeset, :is_correct) == true
     end
   end
+
+  describe "answer_changeset with :grammar_make_question_answer" do
+    @question_data %{
+      "requirement" => "test requirement",
+      "expected_question" => "いえへいけますか。",
+      "expected_answer" => "はい、いけます。",
+      "expected_question_reading" => "いえへいけますか",
+      "expected_answer_reading" => "はいいけます"
+    }
+
+    defp mqa_changeset(question, answer, question_data \\ @question_data, points \\ 10) do
+      attrs = %{
+        "answer" => TestStepAnswer.build_make_question_answer(question, answer),
+        "step_index" => 0,
+        "attempts" => 1,
+        "hints_used" => 0
+      }
+
+      TestStepAnswer.answer_changeset(
+        %TestStepAnswer{},
+        attrs,
+        "N/A",
+        points,
+        question_data,
+        :grammar_make_question_answer
+      )
+    end
+
+    test "both parts matching is correct with full points" do
+      changeset = mqa_changeset("いえへいけますか。", "はい、いけます。")
+
+      assert changeset.valid?
+      assert Ecto.Changeset.get_field(changeset, :is_correct) == true
+      assert Ecto.Changeset.get_field(changeset, :points_earned) == 10
+    end
+
+    test "ignores punctuation and whitespace differences" do
+      changeset = mqa_changeset("いえへ　いけますか", "はい いけます")
+
+      assert Ecto.Changeset.get_field(changeset, :is_correct) == true
+    end
+
+    test "only the question matching awards half points (rounded down)" do
+      changeset = mqa_changeset("いえへいけますか", "いいえ、いけません")
+
+      assert Ecto.Changeset.get_field(changeset, :is_correct) == false
+      assert Ecto.Changeset.get_field(changeset, :points_earned) == 5
+    end
+
+    test "only the answer matching awards half points (rounded down)" do
+      changeset = mqa_changeset("がっこうへいけますか", "はい、いけます。")
+
+      assert Ecto.Changeset.get_field(changeset, :is_correct) == false
+      assert Ecto.Changeset.get_field(changeset, :points_earned) == 5
+    end
+
+    test "no match awards zero points" do
+      changeset = mqa_changeset("がっこうへいけますか", "いいえ、いけません")
+
+      assert Ecto.Changeset.get_field(changeset, :is_correct) == false
+      assert Ecto.Changeset.get_field(changeset, :points_earned) == 0
+    end
+
+    test "half credit rounds down for odd point values" do
+      changeset = mqa_changeset("いえへいけますか", "いいえ、いけません", @question_data, 9)
+
+      assert Ecto.Changeset.get_field(changeset, :points_earned) == 4
+    end
+  end
 end

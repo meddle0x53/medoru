@@ -9,6 +9,7 @@ defmodule MedoruWeb.ClassroomLive.Test do
   alias Medoru.Tests
   alias Medoru.Grammar.Validator
   alias Medoru.Tests.ReadingAnswerValidator
+  alias Medoru.Tests.TestStepAnswer
   alias MedoruWeb.PublicAccess
   alias MedoruWeb.SlugRoutes
   alias MedoruWeb.WritingFillInComponents
@@ -345,6 +346,10 @@ defmodule MedoruWeb.ClassroomLive.Test do
   defp initial_answer_for_step(%{question_type: :conjugation}), do: ""
   defp initial_answer_for_step(%{question_type: :grammar_pattern}), do: ""
   defp initial_answer_for_step(%{question_type: :writing_fill_in}), do: %{}
+
+  defp initial_answer_for_step(%{question_type: :grammar_make_question_answer}),
+    do: %{"make_question" => "", "make_answer" => ""}
+
   defp initial_answer_for_step(%{question_type: :image_to_meaning}), do: nil
 
   defp initial_answer_for_step(%{question_type: :reading_text}),
@@ -586,6 +591,9 @@ defmodule MedoruWeb.ClassroomLive.Test do
 
       :grammar_pattern ->
         handle_grammar_pattern_answer(socket, params["answer"], step, session)
+
+      :grammar_make_question_answer ->
+        handle_make_question_answer_answer(socket, params["make_question_answer"], step, session)
 
       _ ->
         # Standard multichoice handling
@@ -1124,6 +1132,62 @@ defmodule MedoruWeb.ClassroomLive.Test do
     end
   end
 
+  # Make question & answer: grade both parts against kana readings
+  defp handle_make_question_answer_answer(socket, mqa_params, step, session) do
+    question =
+      if is_map(mqa_params), do: mqa_params["question"] || "", else: ""
+
+    answer =
+      if is_map(mqa_params), do: mqa_params["answer"] || "", else: ""
+
+    if String.trim(question) == "" or String.trim(answer) == "" do
+      {:noreply, put_flash(socket, :error, gettext("Please enter both a question and an answer"))}
+    else
+      combined = TestStepAnswer.build_make_question_answer(question, answer)
+
+      {is_correct, points_earned} =
+        TestStepAnswer.grade_make_question_answer(
+          combined,
+          step.question_data || %{},
+          step.points
+        )
+
+      result =
+        Tests.record_step_answer(session.id, step.id, %{
+          "answer" => combined,
+          "time_spent_seconds" => 40,
+          "step_index" => step.order_index,
+          "is_correct" => is_correct,
+          "points_earned" => points_earned,
+          "metadata" => %{
+            "grammar_step" => true,
+            "grammar_make_question_answer" => true,
+            "student_question" => question,
+            "student_answer" => answer
+          }
+        })
+
+      case result do
+        {:ok, _step_answer} ->
+          maybe_update_attempt_progress(socket, fn attempt ->
+            %{
+              score: points_earned,
+              time_spent_seconds: attempt.time_spent_seconds + 40
+            }
+          end)
+
+          move_to_next_step(socket, session)
+
+        {:error, changeset} ->
+          require Logger
+          Logger.error("Failed to submit answer: #{inspect(changeset.errors)}")
+
+          {:noreply,
+           put_flash(socket, :error, gettext("Failed to submit answer. Please try again."))}
+      end
+    end
+  end
+
   defp handle_writing_fill_in_answer(socket, answer, step, session) do
     question_data = step.question_data || %{}
     correct_answer = step.correct_answer
@@ -1551,15 +1615,13 @@ defmodule MedoruWeb.ClassroomLive.Test do
               )}
             </span>
             <span>
-              {format_percentage((@current_step_index + 1) / @total_steps * 100)}%{gettext(
-                " complete"
-              )}
+              {format_percentage(@current_step_index / @total_steps * 100)}%{gettext(" complete")}
             </span>
           </div>
           <div class="h-1.5 sm:h-2 bg-base-200 rounded-full overflow-hidden">
             <div
               class="h-full bg-primary transition-all duration-300"
-              style={"width: #{((@current_step_index + 1) / @total_steps) * 100}%"}
+              style={"width: #{(@current_step_index / @total_steps) * 100}%"}
             />
           </div>
         </div>
@@ -1597,7 +1659,7 @@ defmodule MedoruWeb.ClassroomLive.Test do
                     </p>
                   <% end %>
                 <% else %>
-                  <%= if @current_step.question_type != :writing do %>
+                  <%= if @current_step.question_type not in [:writing, :grammar_make_question_answer] do %>
                     <h2 class="text-lg sm:text-xl font-medium text-base-content leading-relaxed">
                       {@current_step.question}
                     </h2>
@@ -1824,6 +1886,12 @@ defmodule MedoruWeb.ClassroomLive.Test do
                       answers={@answer}
                       input_event="update_writing_fill_in"
                       disabled={false}
+                    />
+                  <% :grammar_make_question_answer -> %>
+                    <MedoruWeb.ClassroomLive.GrammarComponents.make_question_answer_question
+                      step={@current_step}
+                      answer={@answer}
+                      step_id={@current_step.id}
                     />
                   <% _ -> %>
                     <.input

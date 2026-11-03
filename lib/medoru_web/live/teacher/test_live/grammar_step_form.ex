@@ -54,6 +54,11 @@ defmodule MedoruWeb.Teacher.TestLive.GrammarStepForm do
             step_form={@step_form}
             step_changeset={@step_changeset}
           />
+        <% :grammar_make_question_answer -> %>
+          <.make_question_answer_form
+            step_form={@step_form}
+            step_changeset={@step_changeset}
+          />
         <% _ -> %>
           <p class="text-secondary">{gettext("Select a grammar step type")}</p>
       <% end %>
@@ -649,6 +654,147 @@ defmodule MedoruWeb.Teacher.TestLive.GrammarStepForm do
       </div>
     </div>
     """
+  end
+
+  # Type 6: Make Question & Answer Form
+  defp make_question_answer_form(assigns) do
+    qd =
+      if assigns.step_form do
+        assigns.step_form[:question_data].value || %{}
+      else
+        %{}
+      end
+
+    assigns =
+      assigns
+      |> assign(:qd, qd)
+      |> assign(
+        :question_value,
+        (assigns.step_form && assigns.step_form[:question].value) ||
+          gettext("Make a question in the pattern and answer it")
+      )
+
+    ~H"""
+    <div class="space-y-4">
+      <input type="hidden" name="step[correct_answer]" value="N/A" />
+
+      <div>
+        <label class="label">
+          <span class="label-text">{gettext("Examples")}</span>
+        </label>
+        <p class="text-sm text-secondary mb-2">
+          {gettext(
+            "Worked examples shown to students above every step. One example per block; separate multiple examples with a blank line."
+          )}
+        </p>
+        <textarea
+          name="step[question_data][examples_text]"
+          class="textarea textarea-bordered w-full font-jp"
+          rows="3"
+          placeholder={gettext("e.g., 例1 お風呂に入りますか。 ……はい、入ります。")}
+        ><%= make_question_answer_examples_text(@qd) %></textarea>
+      </div>
+
+      <div>
+        <label class="label" for="step_question">
+          <span class="label-text">{gettext("Question")}</span>
+        </label>
+        <input
+          type="text"
+          id="step_question"
+          name="step[question]"
+          value={@question_value}
+          class="input input-bordered w-full"
+          placeholder={gettext("e.g., Make a question in the pattern and answer it")}
+          required
+        />
+      </div>
+
+      <div>
+        <label class="label">
+          <span class="label-text">{gettext("Requirement")}</span>
+        </label>
+        <p class="text-sm text-secondary mb-2">
+          {gettext("Shown to students, e.g. 「家の 部屋で 料理（いいえ）」")}
+        </p>
+        <input
+          type="text"
+          name="step[question_data][requirement]"
+          value={@qd["requirement"] || ""}
+          class="input input-bordered w-full font-jp"
+          placeholder={gettext("e.g., 家の 部屋で 料理（いいえ）")}
+          required
+        />
+      </div>
+
+      <div>
+        <label class="label">
+          <span class="label-text">{gettext("Expected Question")}</span>
+        </label>
+        <input
+          type="text"
+          name="step[question_data][expected_question]"
+          value={@qd["expected_question"] || ""}
+          class="input input-bordered w-full font-jp"
+          placeholder={gettext("e.g., 家の部屋で料理ができますか。")}
+          required
+        />
+      </div>
+
+      <div>
+        <label class="label">
+          <span class="label-text">{gettext("Expected Answer")}</span>
+        </label>
+        <input
+          type="text"
+          name="step[question_data][expected_answer]"
+          value={@qd["expected_answer"] || ""}
+          class="input input-bordered w-full font-jp"
+          placeholder={gettext("e.g., いいえ、できません。")}
+          required
+        />
+      </div>
+
+      <div>
+        <label class="label">
+          <span class="label-text">{gettext("Expected Question Reading (kana only)")}</span>
+        </label>
+        <input
+          type="text"
+          name="step[question_data][expected_question_reading]"
+          value={@qd["expected_question_reading"] || ""}
+          class="input input-bordered w-full font-jp"
+          placeholder={gettext("e.g., いえのへやでりょうりができますか")}
+          required
+        />
+      </div>
+
+      <div>
+        <label class="label">
+          <span class="label-text">{gettext("Expected Answer Reading (kana only)")}</span>
+        </label>
+        <input
+          type="text"
+          name="step[question_data][expected_answer_reading]"
+          value={@qd["expected_answer_reading"] || ""}
+          class="input input-bordered w-full font-jp"
+          placeholder={gettext("e.g., いいえできません")}
+          required
+        />
+      </div>
+    </div>
+    """
+  end
+
+  defp make_question_answer_examples_text(%{"examples_text" => text})
+       when is_binary(text) and text != "",
+       do: text
+
+  defp make_question_answer_examples_text(question_data) do
+    case question_data do
+      %{"examples" => examples} when is_list(examples) -> Enum.join(examples, "\n\n")
+      _ -> ""
+    end
   end
 
   defp examples_text(%{"examples_text" => text}) when is_binary(text) and text != "", do: text

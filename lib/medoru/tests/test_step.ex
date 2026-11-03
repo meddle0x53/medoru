@@ -40,7 +40,8 @@ defmodule Medoru.Tests.TestStep do
     :conjugation_multichoice,
     :word_order,
     :grammar_pattern,
-    :writing_fill_in
+    :writing_fill_in,
+    :grammar_make_question_answer
   ]
 
   @primary_key {:id, :binary_id, autogenerate: true}
@@ -129,6 +130,7 @@ defmodule Medoru.Tests.TestStep do
       :word_order -> 3
       :grammar_pattern -> 10
       :writing_fill_in -> 10
+      :grammar_make_question_answer -> 10
     end
   end
 
@@ -175,6 +177,13 @@ defmodule Medoru.Tests.TestStep do
 
         {:writing_fill_in, p, _} when p != 10 ->
           add_error(changeset, :points, "writing fill-in questions must be worth 10 points")
+
+        {:grammar_make_question_answer, p, :grammar} when p != 10 ->
+          add_error(
+            changeset,
+            :points,
+            "make question and answer questions must be worth 10 points"
+          )
 
         _ ->
           changeset

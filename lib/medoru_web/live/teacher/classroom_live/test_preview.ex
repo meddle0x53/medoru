@@ -17,6 +17,7 @@ defmodule MedoruWeb.Teacher.ClassroomLive.TestPreview do
   alias Medoru.Grammar.Validator
   alias Medoru.Tests
   alias Medoru.Tests.ReadingAnswerValidator
+  alias Medoru.Tests.TestStepAnswer
   alias MedoruWeb.ClassroomLive.GrammarComponents
   alias MedoruWeb.WritingFillInComponents
 
@@ -159,6 +160,9 @@ defmodule MedoruWeb.Teacher.ClassroomLive.TestPreview do
 
       :grammar_pattern ->
         handle_grammar_pattern_answer(socket, params["answer"], step)
+
+      :grammar_make_question_answer ->
+        handle_make_question_answer_answer(socket, params["make_question_answer"], step)
 
       :image_to_meaning ->
         handle_image_to_meaning_answer(socket, params["answer"] || socket.assigns.selected_answer)
@@ -423,6 +427,25 @@ defmodule MedoruWeb.Teacher.ClassroomLive.TestPreview do
     {:noreply, mark_feedback(socket, is_correct)}
   end
 
+  defp handle_make_question_answer_answer(socket, mqa_params, step) do
+    question =
+      if is_map(mqa_params), do: mqa_params["question"] || "", else: ""
+
+    answer =
+      if is_map(mqa_params), do: mqa_params["answer"] || "", else: ""
+
+    combined = TestStepAnswer.build_make_question_answer(question, answer)
+
+    {is_correct, _points} =
+      TestStepAnswer.grade_make_question_answer(
+        combined,
+        step.question_data || %{},
+        step.points
+      )
+
+    {:noreply, mark_feedback(socket, is_correct)}
+  end
+
   # ============================================================================
   # State management helpers
   # ============================================================================
@@ -475,6 +498,9 @@ defmodule MedoruWeb.Teacher.ClassroomLive.TestPreview do
   defp initial_answer_for_step(%{question_type: :conjugation}), do: ""
   defp initial_answer_for_step(%{question_type: :grammar_pattern}), do: ""
   defp initial_answer_for_step(%{question_type: :writing_fill_in}), do: %{}
+
+  defp initial_answer_for_step(%{question_type: :grammar_make_question_answer}),
+    do: %{"make_question" => "", "make_answer" => ""}
 
   defp initial_answer_for_step(%{question_type: :reading_text}),
     do: %{"meaning" => "", "reading" => ""}
@@ -660,13 +686,13 @@ defmodule MedoruWeb.Teacher.ClassroomLive.TestPreview do
                     total: @total_steps
                   )}
                 </span>
-                <% progress = round((@current_step_index + 1) / @total_steps * 100) %>
+                <% progress = round(@current_step_index / @total_steps * 100) %>
                 <span class="text-secondary">{progress}{"%"} {gettext("complete")}</span>
               </div>
               <div class="h-1.5 sm:h-2 bg-base-200 rounded-full overflow-hidden">
                 <div
                   class="h-full bg-primary transition-all duration-300"
-                  style={"width: #{(@current_step_index + 1) / @total_steps * 100}%"}
+                  style={"width: #{@current_step_index / @total_steps * 100}%"}
                 >
                 </div>
               </div>
@@ -705,7 +731,7 @@ defmodule MedoruWeb.Teacher.ClassroomLive.TestPreview do
                     </p>
                   <% end %>
                 <% else %>
-                  <%= if @current_step.question_type != :writing do %>
+                  <%= if @current_step.question_type not in [:writing, :grammar_make_question_answer] do %>
                     <h2 class="text-lg sm:text-xl font-medium text-base-content leading-relaxed">
                       {@current_step.question}
                     </h2>
@@ -734,11 +760,27 @@ defmodule MedoruWeb.Teacher.ClassroomLive.TestPreview do
                     <.icon name="hero-x-circle" class="w-8 h-8 text-error shrink-0" />
                     <div>
                       <p class="font-semibold text-error text-lg">{gettext("Incorrect")}</p>
-                      <p class="text-error-content/80">
-                        {gettext("The correct answer is: %{answer}",
-                          answer: @current_step.correct_answer
-                        )}
-                      </p>
+                      <%= if @current_step.question_type == :grammar_make_question_answer do %>
+                        <% qd = @current_step.question_data || %{}
+                        expected_question = qd["expected_question"] || ""
+                        expected_answer = qd["expected_answer"] || "" %>
+                        <div class="text-error-content/80 space-y-1 font-jp">
+                          <p>
+                            <span class="font-medium">{gettext("Expected question:")}</span>
+                            {expected_question}
+                          </p>
+                          <p>
+                            <span class="font-medium">{gettext("Expected answer:")}</span>
+                            {expected_answer}
+                          </p>
+                        </div>
+                      <% else %>
+                        <p class="text-error-content/80">
+                          {gettext("The correct answer is: %{answer}",
+                            answer: @current_step.correct_answer
+                          )}
+                        </p>
+                      <% end %>
                       <%= if @current_step.explanation do %>
                         <p class="text-error-content/80 mt-1">{@current_step.explanation}</p>
                       <% end %>
@@ -874,6 +916,12 @@ defmodule MedoruWeb.Teacher.ClassroomLive.TestPreview do
                       answers={@answer}
                       input_event="update_writing_fill_in"
                       disabled={@feedback != nil}
+                    />
+                  <% :grammar_make_question_answer -> %>
+                    <GrammarComponents.make_question_answer_question
+                      step={@current_step}
+                      answer={@answer}
+                      step_id={@current_step.id}
                     />
                   <% :image_to_meaning -> %>
                     <div class="space-y-4">

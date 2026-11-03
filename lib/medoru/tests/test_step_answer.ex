@@ -97,21 +97,109 @@ defmodule Medoru.Tests.TestStepAnswer do
     attempts = get_field(changeset, :attempts) || 1
     hints_used = get_field(changeset, :hints_used) || 0
 
-    # Check if we should use word_id-based validation (for localized content)
-    is_correct = validate_answer(answer, correct_answer, question_data)
+    if step_question_type == :grammar_make_question_answer do
+      {is_correct, points_earned} =
+        grade_make_question_answer(answer, question_data, max_points, attempts, hints_used)
 
-    # Calculate points with penalties
-    points_earned =
-      if is_correct do
-        apply_penalties(max_points, attempts, hints_used, step_question_type)
-      else
-        0
-      end
+      changeset
+      |> put_change(:is_correct, is_correct)
+      |> put_change(:points_earned, points_earned)
+    else
+      # Check if we should use word_id-based validation (for localized content)
+      is_correct = validate_answer(answer, correct_answer, question_data)
 
-    changeset
-    |> put_change(:is_correct, is_correct)
-    |> put_change(:points_earned, points_earned)
+      # Calculate points with penalties
+      points_earned =
+        if is_correct do
+          apply_penalties(max_points, attempts, hints_used, step_question_type)
+        else
+          0
+        end
+
+      changeset
+      |> put_change(:is_correct, is_correct)
+      |> put_change(:points_earned, points_earned)
+    end
   end
+
+  @doc """
+  Separator joining the student's question and answer into the recorded
+  answer string for `:grammar_make_question_answer` steps.
+  """
+  def make_question_answer_separator, do: "\n"
+
+  @doc """
+  Builds the answer string submitted for a `:grammar_make_question_answer` step.
+  """
+  def build_make_question_answer(question, answer) do
+    (question || "") <> make_question_answer_separator() <> (answer || "")
+  end
+
+  @doc """
+  Grades a "make a question and answer it" submission.
+
+  The recorded answer is the student's question and answer joined by
+  `make_question_answer_separator/0`. Both parts are converted to kana-only
+  readings (`Medoru.Grammar.ReadingConverter.normalize_for_comparison/1`)
+  and compared with the expected readings. Full points only when both match;
+  half points (rounded down) when exactly one matches.
+
+  Returns `{is_correct, points_earned}`.
+  """
+  def grade_make_question_answer(
+        answer,
+        question_data,
+        max_points,
+        attempts \\ 1,
+        hints_used \\ 0
+      ) do
+    alias Medoru.Grammar.ReadingConverter
+
+    {student_question, student_answer} = split_make_question_answer(answer)
+
+    expected_question_reading =
+      question_data["expected_question_reading"] ||
+        question_data[:expected_question_reading] ||
+        ""
+
+    expected_answer_reading =
+      question_data["expected_answer_reading"] ||
+        question_data[:expected_answer_reading] ||
+        ""
+
+    question_correct =
+      ReadingConverter.normalize_for_comparison(student_question) ==
+        ReadingConverter.normalize_for_comparison(expected_question_reading)
+
+    answer_correct =
+      ReadingConverter.normalize_for_comparison(student_answer) ==
+        ReadingConverter.normalize_for_comparison(expected_answer_reading)
+
+    case {question_correct, answer_correct} do
+      {true, true} ->
+        {true, apply_penalties(max_points, attempts, hints_used, :grammar_make_question_answer)}
+
+      {false, false} ->
+        {false, 0}
+
+      _ ->
+        # Partial credit: half points rounded down when only one part matches.
+        {false, div(max_points, 2)}
+    end
+  end
+
+  @doc """
+  Splits a recorded `:grammar_make_question_answer` answer into its question
+  and answer parts.
+  """
+  def split_make_question_answer(answer) when is_binary(answer) do
+    case String.split(answer, make_question_answer_separator(), parts: 2) do
+      [question, answer_part] -> {question, answer_part}
+      [question] -> {question, ""}
+    end
+  end
+
+  def split_make_question_answer(_), do: {"", ""}
 
   @doc """
   Validates an answer, using word_id comparison when option_word_ids are available.

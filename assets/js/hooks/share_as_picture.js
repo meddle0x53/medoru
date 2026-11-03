@@ -59,20 +59,20 @@ const ShareAsPicture = {
       // site-wide one on <html>) onto the target so they survive the clone.
       const copiedVars = []
 
-      if (explicitTargetId) {
-        const themeSource = target.closest("[data-theme]") || document.documentElement
-        const rootStyles = getComputedStyle(themeSource)
-        for (const name of rootStyles) {
-          if (name.startsWith("--")) {
-            copiedVars.push([name, target.style.getPropertyValue(name)])
-            target.style.setProperty(name, rootStyles.getPropertyValue(name))
-          }
+      const themeSource = target.closest("[data-theme]") || document.documentElement
+      const rootStyles = getComputedStyle(themeSource)
+      for (const name of rootStyles) {
+        if (name.startsWith("--")) {
+          copiedVars.push([name, target.style.getPropertyValue(name)])
+          target.style.setProperty(name, rootStyles.getPropertyValue(name))
         }
       }
 
-      const backgroundColor = explicitTargetId
-        ? getComputedStyle(target).backgroundColor
-        : "#ffffff"
+      const computedBackground = getComputedStyle(target).backgroundColor
+      const backgroundColor =
+        computedBackground && computedBackground !== "rgba(0, 0, 0, 0)"
+          ? computedBackground
+          : "#ffffff"
 
       this.el.disabled = true
       this.el.innerHTML = `<span class="loading loading-spinner loading-xs"></span>`

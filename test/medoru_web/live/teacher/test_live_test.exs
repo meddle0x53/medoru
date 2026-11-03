@@ -272,5 +272,59 @@ defmodule MedoruWeb.Teacher.TestLiveTest do
       assert html =~ "ミラーさん・銀行員 → ミラーさんは銀行員じゃありません。"
       assert html =~ "山田さん・学生 → 山田さんは学生じゃありません。"
     end
+
+    test "teacher can add grammar_make_question_answer step manually", %{
+      conn: conn,
+      teacher: teacher
+    } do
+      test = teacher_test_fixture(teacher.id)
+
+      {:ok, view, _html} =
+        conn |> log_in_user(teacher) |> live(~p"/teacher/tests/#{test.id}/edit")
+
+      view |> element("button", "Add First Step") |> render_click()
+
+      html =
+        view |> element("button[phx-value-type='grammar_make_question_answer']") |> render_click()
+
+      assert html =~ "Requirement"
+      assert html =~ "Expected Question"
+      assert html =~ "Expected Answer"
+      assert html =~ "Extract from Image"
+      assert html =~ "make-question-answer-image-form"
+
+      attrs = %{
+        "question" => "Make a question in the pattern and answer it",
+        "question_data" => %{
+          "requirement" => "家の 部屋で 料理（いいえ）",
+          "expected_question" => "家の部屋で料理ができますか。",
+          "expected_answer" => "いいえ、できません。",
+          "expected_question_reading" => "いえのへやでりょうりができますか",
+          "expected_answer_reading" => "いいえできません",
+          "examples_text" => "この 公園で サッカー（はい）\nこの公園でサッカーができますか。\n……はい、できます。"
+        }
+      }
+
+      view
+      |> form("#step-form", %{"step" => attrs})
+      |> render_submit()
+
+      assert render(view) =~ "Step added successfully."
+
+      [step] = Tests.list_test_steps(test.id)
+      assert step.question_type == :grammar_make_question_answer
+      assert step.step_type == :grammar
+      assert step.points == 10
+
+      assert step.question_data["requirement"] == "家の 部屋で 料理（いいえ）"
+      assert step.question_data["expected_question"] == "家の部屋で料理ができますか。"
+      assert step.question_data["expected_answer"] == "いいえ、できません。"
+      assert step.question_data["expected_question_reading"] == "いえのへやでりょうりができますか"
+      assert step.question_data["expected_answer_reading"] == "いいえできません"
+
+      assert step.question_data["examples"] == [
+               "この 公園で サッカー（はい）\nこの公園でサッカーができますか。\n……はい、できます。"
+             ]
+    end
   end
 end

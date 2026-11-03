@@ -1589,6 +1589,7 @@ defmodule Medoru.Tests do
   defp xp_for_question_type(:listening), do: 100
   defp xp_for_question_type(:grammar_pattern), do: 50
   defp xp_for_question_type(:writing_fill_in), do: 50
+  defp xp_for_question_type(:grammar_make_question_answer), do: 50
   defp xp_for_question_type(_), do: 0
 
   defp award_test_xp(session_id, user_id) do

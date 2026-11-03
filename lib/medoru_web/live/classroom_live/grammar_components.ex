@@ -383,6 +383,90 @@ defmodule MedoruWeb.ClassroomLive.GrammarComponents do
     """
   end
 
+  @doc """
+  Renders a "make a question and answer it" step: multi-line worked examples,
+  the requirement, and two text inputs (question / answer).
+  """
+  attr :step, :map, required: true
+  attr :answer, :map, default: %{}
+  attr :step_id, :any, required: true
+
+  def make_question_answer_question(assigns) do
+    question_data = assigns.step.question_data || %{}
+
+    examples =
+      question_data
+      |> Map.get("examples", [])
+      |> List.wrap()
+      |> Enum.reject(&(&1 == ""))
+
+    assigns =
+      assign(assigns,
+        examples: examples,
+        requirement: question_data["requirement"] || "",
+        question_value: (assigns.answer || %{})["make_question"] || "",
+        answer_value: (assigns.answer || %{})["make_answer"] || ""
+      )
+
+    ~H"""
+    <div class="space-y-4" id={"make-question-answer-#{@step_id}"}>
+      <div class="text-base-content font-medium">
+        {@step.question}
+      </div>
+
+      <%= if @examples != [] do %>
+        <div class="bg-base-200 rounded-xl p-4 space-y-2">
+          <p class="text-sm text-secondary mb-1">{gettext("例")}</p>
+          <%= for example <- @examples do %>
+            <div class="font-jp text-base-content">
+              <%= for line <- String.split(example, "\n") do %>
+                <div>{line}</div>
+              <% end %>
+            </div>
+          <% end %>
+        </div>
+      <% end %>
+
+      <%= if @requirement != "" do %>
+        <div class="bg-base-200 rounded-xl p-4">
+          <p class="text-sm text-secondary mb-1">{gettext("Requirement")}</p>
+          <p class="text-lg font-jp text-base-content">{@requirement}</p>
+        </div>
+      <% end %>
+
+      <div>
+        <label class="block text-sm font-medium text-base-content mb-2">
+          {gettext("Write your question")}
+        </label>
+        <.input
+          type="text"
+          name="make_question_answer[question]"
+          id={"make-question-#{@step_id}"}
+          value={@question_value}
+          placeholder={gettext("Type your question here...")}
+          class="w-full font-jp"
+          required
+        />
+      </div>
+
+      <div>
+        <label class="block text-sm font-medium text-base-content mb-2">
+          {gettext("Write your answer")}
+        </label>
+        <.input
+          type="text"
+          name="make_question_answer[answer]"
+          id={"make-answer-#{@step_id}"}
+          value={@answer_value}
+          placeholder={gettext("Type your answer here...")}
+          class="w-full font-jp"
+          required
+        />
+      </div>
+    </div>
+    """
+  end
+
   defp icon(assigns) do
     apply(CoreComponents, :icon, [assigns])
   end

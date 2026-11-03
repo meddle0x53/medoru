@@ -59,6 +59,8 @@ defmodule MedoruWeb.LessonTestLive.Show do
           |> assign(:meaning_answer, "")
           |> assign(:reading_answer, "")
           |> assign(:grammar_pattern_answer, "")
+          |> assign(:make_question_answer_answers, %{"question" => "", "answer" => ""})
+          |> assign(:make_question_answer_answers, %{"question" => "", "answer" => ""})
           |> assign(:writing_fill_in_answers, %{})
           |> assign(:feedback, nil)
           |> assign(:show_hint, false)
@@ -132,6 +134,78 @@ defmodule MedoruWeb.LessonTestLive.Show do
   end
 
   @impl true
+  def handle_event("update_make_question_answer", params, socket) do
+    field =
+      case params["field"] do
+        "question" -> "question"
+        "answer" -> "answer"
+        _ -> nil
+      end
+
+    value = Map.get(params, "make_question_answer", params["value"] || "")
+
+    if field do
+      answers = Map.put(socket.assigns.make_question_answer_answers, field, value)
+      {:noreply, assign(socket, :make_question_answer_answers, answers)}
+    else
+      {:noreply, socket}
+    end
+  end
+
+  @impl true
+  def handle_event("submit_make_question_answer", _params, socket) do
+    answers = socket.assigns.make_question_answer_answers
+    question = answers["question"] || ""
+    answer = answers["answer"] || ""
+
+    if String.trim(question) == "" or String.trim(answer) == "" do
+      {:noreply, put_flash(socket, :error, gettext("Please enter both a question and an answer"))}
+    else
+      session = socket.assigns.session
+      step = socket.assigns.current_step
+
+      combined = Medoru.Tests.TestStepAnswer.build_make_question_answer(question, answer)
+
+      case LessonTestSession.submit_answer(session.id, step.id, combined, time_spent_seconds: 15) do
+        {:correct, result} ->
+          socket =
+            socket
+            |> assign(:feedback, :correct)
+            |> assign(:session, result.session)
+            |> assign(:current_step, result.next_step)
+            |> assign(:session_state, LessonTestSession.get_session_state(result.session.id))
+            |> assign(:make_question_answer_answers, %{"question" => "", "answer" => ""})
+            |> assign(:show_hint, false)
+
+          {:noreply, socket}
+
+        {:incorrect, result} ->
+          socket =
+            socket
+            |> assign(:feedback, :incorrect)
+            |> assign(:session, result.session)
+            |> assign(:current_step, result.next_step)
+            |> assign(:session_state, LessonTestSession.get_session_state(result.session.id))
+            |> assign(:make_question_answer_answers, %{"question" => "", "answer" => ""})
+
+          {:noreply, socket}
+
+        {:completed, result} ->
+          Medoru.Learning.complete_lesson(
+            socket.assigns.current_scope.current_user.id,
+            socket.assigns.lesson.id
+          )
+
+          {:noreply,
+           socket
+           |> assign(:completed, true)
+           |> assign(:result, result)
+           |> push_navigate(to: ~p"/lessons/#{socket.assigns.lesson.id}/test/complete")}
+      end
+    end
+  end
+
+  @impl true
   def handle_event("submit_grammar_pattern", _params, socket) do
     answer = socket.assigns.grammar_pattern_answer
 
@@ -150,6 +224,7 @@ defmodule MedoruWeb.LessonTestLive.Show do
             |> assign(:current_step, result.next_step)
             |> assign(:session_state, LessonTestSession.get_session_state(result.session.id))
             |> assign(:grammar_pattern_answer, "")
+            |> assign(:make_question_answer_answers, %{"question" => "", "answer" => ""})
             |> assign(:show_hint, false)
 
           {:noreply, socket}
@@ -162,6 +237,7 @@ defmodule MedoruWeb.LessonTestLive.Show do
             |> assign(:current_step, result.next_step)
             |> assign(:session_state, LessonTestSession.get_session_state(result.session.id))
             |> assign(:grammar_pattern_answer, "")
+            |> assign(:make_question_answer_answers, %{"question" => "", "answer" => ""})
 
           {:noreply, socket}
 
@@ -330,6 +406,7 @@ defmodule MedoruWeb.LessonTestLive.Show do
             |> assign(:meaning_answer, "")
             |> assign(:reading_answer, "")
             |> assign(:grammar_pattern_answer, "")
+            |> assign(:make_question_answer_answers, %{"question" => "", "answer" => ""})
             |> assign(:show_hint, false)
             |> assign(:meaning_error, false)
             |> assign(:reading_error, false)
@@ -351,6 +428,7 @@ defmodule MedoruWeb.LessonTestLive.Show do
             |> assign(:meaning_answer, "")
             |> assign(:reading_answer, "")
             |> assign(:grammar_pattern_answer, "")
+            |> assign(:make_question_answer_answers, %{"question" => "", "answer" => ""})
             |> assign(:show_hint, false)
             |> assign(:meaning_error, !result.wrong_answer.meaning_correct)
             |> assign(:reading_error, !result.wrong_answer.reading_correct)
@@ -395,6 +473,7 @@ defmodule MedoruWeb.LessonTestLive.Show do
       |> assign(:meaning_answer, "")
       |> assign(:reading_answer, "")
       |> assign(:grammar_pattern_answer, "")
+      |> assign(:make_question_answer_answers, %{"question" => "", "answer" => ""})
       |> assign(:writing_fill_in_answers, %{})
       |> assign(:show_hint, false)
       |> assign(:feedback, nil)
@@ -428,6 +507,7 @@ defmodule MedoruWeb.LessonTestLive.Show do
       |> assign(:correct_meaning, nil)
       |> assign(:correct_reading, nil)
       |> assign(:grammar_pattern_answer, "")
+      |> assign(:make_question_answer_answers, %{"question" => "", "answer" => ""})
       |> assign(:next_step_after_correction, nil)
 
     {:noreply, socket}
@@ -872,6 +952,70 @@ defmodule MedoruWeb.LessonTestLive.Show do
                   disabled={@feedback != nil}
                 />
               <% end %>
+
+              <%!-- Make Question & Answer Step --%>
+              <%= if @current_step.question_type == :grammar_make_question_answer do %>
+                <% qd = @current_step.question_data || %{}
+                mqa = @make_question_answer_answers || %{"question" => "", "answer" => ""}
+                mqa_examples = List.wrap(qd["examples"]) |> Enum.reject(&(&1 == "")) %>
+                <div class="space-y-6 mb-6">
+                  <div class="text-base-content font-medium">
+                    {@current_step.question}
+                  </div>
+
+                  <%= if mqa_examples != [] do %>
+                    <div class="bg-base-200 rounded-xl p-4 space-y-2">
+                      <div class="text-sm text-secondary mb-1">{gettext("例")}</div>
+                      <%= for example <- mqa_examples do %>
+                        <div class="font-jp text-base-content">
+                          <%= for line <- String.split(example, "\n") do %>
+                            <div>{line}</div>
+                          <% end %>
+                        </div>
+                      <% end %>
+                    </div>
+                  <% end %>
+
+                  <%= if qd["requirement"] && qd["requirement"] != "" do %>
+                    <div class="bg-base-200 rounded-xl p-4">
+                      <div class="text-sm text-secondary mb-1">{gettext("Requirement")}</div>
+                      <div class="text-lg font-jp text-base-content">{qd["requirement"]}</div>
+                    </div>
+                  <% end %>
+
+                  <div>
+                    <label class="block text-sm text-secondary mb-2">
+                      {gettext("Write your question")}
+                    </label>
+                    <input
+                      type="text"
+                      name="make_question_answer[question]"
+                      value={mqa["question"]}
+                      phx-change="update_make_question_answer"
+                      phx-value-field="question"
+                      class="input input-bordered w-full font-jp text-lg"
+                      placeholder={gettext("Type your question here...")}
+                      disabled={@feedback != nil}
+                    />
+                  </div>
+
+                  <div>
+                    <label class="block text-sm text-secondary mb-2">
+                      {gettext("Write your answer")}
+                    </label>
+                    <input
+                      type="text"
+                      name="make_question_answer[answer]"
+                      value={mqa["answer"]}
+                      phx-change="update_make_question_answer"
+                      phx-value-field="answer"
+                      class="input input-bordered w-full font-jp text-lg"
+                      placeholder={gettext("Type your answer here...")}
+                      disabled={@feedback != nil}
+                    />
+                  </div>
+                </div>
+              <% end %>
             <% end %>
 
             <%!-- Actions --%>
@@ -970,6 +1114,26 @@ defmodule MedoruWeb.LessonTestLive.Show do
                 <button
                   type="button"
                   phx-click="submit_writing_fill_in"
+                  class="w-full sm:w-auto px-6 py-3 bg-primary text-primary-content rounded-xl font-medium hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors min-h-[48px]"
+                >
+                  {gettext("Submit Answer")}
+                </button>
+
+                <button
+                  type="button"
+                  phx-click="skip_question"
+                  class="w-full sm:w-auto sm:ml-auto px-4 py-3 bg-base-200 hover:bg-base-300 text-base-content rounded-xl transition-colors min-h-[48px]"
+                >
+                  {gettext("Skip →")}
+                </button>
+              <% end %>
+
+              <%= if @current_step.question_type == :grammar_make_question_answer && @feedback != :incorrect do %>
+                <% mqa = @make_question_answer_answers || %{"question" => "", "answer" => ""} %>
+                <button
+                  type="button"
+                  phx-click="submit_make_question_answer"
+                  disabled={mqa["question"] == "" or mqa["answer"] == ""}
                   class="w-full sm:w-auto px-6 py-3 bg-primary text-primary-content rounded-xl font-medium hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors min-h-[48px]"
                 >
                   {gettext("Submit Answer")}

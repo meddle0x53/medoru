@@ -144,7 +144,8 @@ defmodule MedoruWeb.StepBuilderComponents do
       conjugation: "bg-amber-100 text-amber-800",
       conjugation_multichoice: "bg-cyan-100 text-cyan-800",
       word_order: "bg-pink-100 text-pink-800",
-      grammar_pattern: "bg-lime-100 text-lime-800"
+      grammar_pattern: "bg-lime-100 text-lime-800",
+      grammar_make_question_answer: "bg-sky-100 text-sky-800"
     }
 
     labels = %{
@@ -161,7 +162,8 @@ defmodule MedoruWeb.StepBuilderComponents do
       conjugation: "Grammar: Conjugation",
       conjugation_multichoice: "Grammar: Multi Choice",
       word_order: "Grammar: Word Order",
-      grammar_pattern: "Grammar: Pattern"
+      grammar_pattern: "Grammar: Pattern",
+      grammar_make_question_answer: "Grammar: Q&A"
     }
 
     assigns =
@@ -316,6 +318,14 @@ defmodule MedoruWeb.StepBuilderComponents do
             icon="hero-puzzle-piece"
             title="Grammar Pattern"
             description="Students build a sentence from words following examples"
+            points="10 points"
+            on_select={@on_select}
+          />
+          <.step_type_option
+            type={:grammar_make_question_answer}
+            icon="hero-question-mark-circle"
+            title="Make Question & Answer"
+            description="Students make a question in the pattern and answer it"
             points="10 points"
             on_select={@on_select}
           />

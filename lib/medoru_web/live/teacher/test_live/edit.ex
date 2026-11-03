@@ -82,6 +82,9 @@ defmodule MedoruWeb.Teacher.TestLive.Edit do
           |> assign(:grammar_pattern_examples, nil)
           |> assign(:extracted_writing_fill_in_steps, nil)
           |> assign(:writing_fill_in_examples, nil)
+          |> assign(:extracted_grammar_make_question_answer_steps, nil)
+          |> assign(:make_question_answer_examples, nil)
+          |> assign(:make_question_answer_image_loading, false)
           |> assign(:writing_fill_in_image_loading, false)
           |> assign(:image_extract_loading, false)
           |> allow_upload(:audio,
@@ -134,6 +137,7 @@ defmodule MedoruWeb.Teacher.TestLive.Edit do
         "conjugation_multichoice" -> {:conjugation_multichoice, "grammar"}
         "word_order" -> {:word_order, "grammar"}
         "grammar_pattern" -> {:grammar_pattern, "grammar"}
+        "grammar_make_question_answer" -> {:grammar_make_question_answer, "grammar"}
         _ -> {:multichoice, "vocabulary"}
       end
 
@@ -206,6 +210,9 @@ defmodule MedoruWeb.Teacher.TestLive.Edit do
      |> assign(:extracted_writing_fill_in_steps, nil)
      |> assign(:writing_fill_in_examples, nil)
      |> assign(:writing_fill_in_image_loading, false)
+     |> assign(:extracted_grammar_make_question_answer_steps, nil)
+     |> assign(:make_question_answer_image_loading, false)
+     |> assign(:make_question_answer_examples, nil)
      |> assign(:image_extract_loading, false)}
   end
 
@@ -437,6 +444,114 @@ defmodule MedoruWeb.Teacher.TestLive.Edit do
   end
 
   @impl true
+  def handle_event("validate_make_question_answer_image", _params, socket) do
+    {:noreply, socket}
+  end
+
+  @impl true
+  def handle_event("extract_make_question_answer_image", _params, socket) do
+    case consume_uploaded_entries(socket, :test_step_image, fn %{path: path}, _entry ->
+           {:ok, File.read!(path)}
+         end) do
+      [] ->
+        {:noreply, put_flash(socket, :error, gettext("Please select an image file."))}
+
+      [image_binary] ->
+        {:noreply,
+         socket
+         |> assign(:make_question_answer_image_loading, true)
+         |> assign(:error, nil)
+         |> start_async(:extract_grammar_make_question_answer, fn ->
+           Medoru.AI.ImageTestSteps.extract_grammar_make_question_answer_steps(image_binary)
+         end)}
+    end
+  end
+
+  @impl true
+  def handle_event(
+        "update_extracted_make_question_answer_step",
+        %{"index" => index, "field" => field, "value" => value},
+        socket
+      ) do
+    index = String.to_integer(index)
+    steps = socket.assigns.extracted_grammar_make_question_answer_steps || []
+
+    updated_steps =
+      List.update_at(steps, index, fn step ->
+        Map.put(step, field, value)
+      end)
+
+    {:noreply, assign(socket, :extracted_grammar_make_question_answer_steps, updated_steps)}
+  end
+
+  @impl true
+  def handle_event("save_make_question_answer_steps", _params, socket) do
+    test = socket.assigns.test
+    steps = socket.assigns.extracted_grammar_make_question_answer_steps || []
+
+    if steps == [] do
+      {:noreply, put_flash(socket, :error, gettext("No steps to save."))}
+    else
+      results =
+        steps
+        |> Enum.with_index()
+        |> Enum.map(fn {step, i} ->
+          attrs = %{
+            "order_index" => socket.assigns.step_count + i,
+            "step_type" => "grammar",
+            "question_type" => "grammar_make_question_answer",
+            "question" => gettext("Make a question in the pattern and answer it"),
+            "points" => 10,
+            "correct_answer" => "N/A",
+            "question_data" => %{
+              "requirement" => step["requirement"] || "",
+              "expected_question" => step["expected_question"] || "",
+              "expected_answer" => step["expected_answer"] || "",
+              "expected_question_reading" => step["expected_question_reading"] || "",
+              "expected_answer_reading" => step["expected_answer_reading"] || "",
+              "examples" => step["examples"] || []
+            }
+          }
+
+          Tests.create_test_step(test, attrs)
+        end)
+
+      errors =
+        Enum.filter(results, fn
+          {:error, _} -> true
+          _ -> false
+        end)
+
+      if errors != [] do
+        require Logger
+
+        Enum.each(errors, fn {:error, changeset} ->
+          Logger.error("Failed to save make question/answer step: #{inspect(changeset.errors)}")
+        end)
+      end
+
+      if errors == [] do
+        steps = Tests.list_test_steps(test.id)
+        test = Tests.get_test!(test.id)
+
+        {:noreply,
+         socket
+         |> assign(:show_step_form, false)
+         |> assign(:step_changeset, nil)
+         |> assign(:step_form, nil)
+         |> assign(:steps, steps)
+         |> assign(:step_count, length(steps))
+         |> assign(:test, test)
+         |> assign(:extracted_grammar_make_question_answer_steps, nil)
+         |> assign(:make_question_answer_examples, nil)
+         |> put_flash(:info, gettext("%{count} steps added!", count: length(steps)))}
+      else
+        {:noreply, put_flash(socket, :error, gettext("Failed to save some steps."))}
+      end
+    end
+  end
+
+  @impl true
   def handle_event("validate_step", %{"step" => step_params}, socket) do
     attrs = parse_options_from_params(step_params)
 
@@ -554,9 +669,29 @@ defmodule MedoruWeb.Teacher.TestLive.Edit do
         attrs
       end
 
+    # For make question/answer steps, canonicalize the examples textarea into
+    # an examples list so student rendering can rely on question_data["examples"]
+    attrs =
+      if step_type == :grammar_make_question_answer do
+        question_data =
+          attrs
+          |> Map.get("question_data", %{})
+          |> normalize_make_question_answer_examples()
+
+        Map.put(attrs, "question_data", question_data)
+      else
+        attrs
+      end
+
     # For grammar step types, set a default correct_answer (not applicable)
     attrs =
-      if step_type in [:sentence_validation, :conjugation, :conjugation_multichoice, :word_order] do
+      if step_type in [
+           :sentence_validation,
+           :conjugation,
+           :conjugation_multichoice,
+           :word_order,
+           :grammar_make_question_answer
+         ] do
         Map.put_new(attrs, "correct_answer", "N/A")
       else
         attrs
@@ -737,9 +872,29 @@ defmodule MedoruWeb.Teacher.TestLive.Edit do
         attrs
       end
 
+    # For make question/answer steps, canonicalize the examples textarea into
+    # an examples list so student rendering can rely on question_data["examples"]
+    attrs =
+      if step_type == :grammar_make_question_answer do
+        question_data =
+          attrs
+          |> Map.get("question_data", %{})
+          |> normalize_make_question_answer_examples()
+
+        Map.put(attrs, "question_data", question_data)
+      else
+        attrs
+      end
+
     # For grammar step types, set a default correct_answer (not applicable)
     attrs =
-      if step_type in [:sentence_validation, :conjugation, :conjugation_multichoice, :word_order] do
+      if step_type in [
+           :sentence_validation,
+           :conjugation,
+           :conjugation_multichoice,
+           :word_order,
+           :grammar_make_question_answer
+         ] do
         Map.put_new(attrs, "correct_answer", "N/A")
       else
         attrs
@@ -2180,6 +2335,48 @@ defmodule MedoruWeb.Teacher.TestLive.Edit do
   end
 
   @impl true
+  def handle_async(:extract_grammar_make_question_answer, {:ok, {:ok, data}}, socket) do
+    steps = data["steps"] || []
+    examples = data["examples"] || []
+
+    if steps == [] do
+      {:noreply,
+       socket
+       |> assign(:extracted_grammar_make_question_answer_steps, nil)
+       |> assign(:make_question_answer_examples, nil)
+       |> assign(:make_question_answer_image_loading, false)
+       |> put_flash(
+         :error,
+         gettext("No make question/answer steps could be extracted from the image.")
+       )}
+    else
+      {:noreply,
+       socket
+       |> assign(:extracted_grammar_make_question_answer_steps, steps)
+       |> assign(:make_question_answer_examples, examples)
+       |> assign(:make_question_answer_image_loading, false)}
+    end
+  end
+
+  @impl true
+  def handle_async(:extract_grammar_make_question_answer, {:ok, {:error, msg}}, socket) do
+    {:noreply,
+     socket
+     |> assign(:make_question_answer_image_loading, false)
+     |> assign(:error, msg)
+     |> put_flash(:error, gettext("Extraction failed: %{message}", message: msg))}
+  end
+
+  @impl true
+  def handle_async(:extract_grammar_make_question_answer, {:exit, reason}, socket) do
+    {:noreply,
+     socket
+     |> assign(:make_question_answer_image_loading, false)
+     |> assign(:error, inspect(reason))
+     |> put_flash(:error, gettext("Extraction process crashed."))}
+  end
+
+  @impl true
   def handle_info(:clear_flash, socket) do
     {:noreply, clear_flash(socket)}
   end
@@ -2412,7 +2609,67 @@ defmodule MedoruWeb.Teacher.TestLive.Edit do
                 </div>
               <% end %>
 
-              <%= if (@step_type != :grammar_pattern || is_nil(@extracted_grammar_pattern_steps)) && (@step_type != :writing_fill_in || is_nil(@extracted_writing_fill_in_steps)) do %>
+              <%= if @step_type == :grammar_make_question_answer && is_nil(@editing_step) && is_nil(@extracted_grammar_make_question_answer_steps) do %>
+                <div>
+                  <label class="block text-sm font-medium text-base-content mb-2">
+                    {gettext("Extract from Image")}
+                  </label>
+                  <form
+                    id="make-question-answer-image-form"
+                    phx-change="validate_make_question_answer_image"
+                    phx-submit="extract_make_question_answer_image"
+                    class="space-y-3"
+                  >
+                    <div
+                      class="border-2 border-dashed border-base-300 rounded-xl p-6 text-center hover:border-primary/50 transition-colors cursor-pointer"
+                      phx-drop-target={@uploads.test_step_image.ref}
+                    >
+                      <.live_file_input upload={@uploads.test_step_image} class="hidden" />
+                      <div phx-click={JS.dispatch("click", to: "##{@uploads.test_step_image.ref}")}>
+                        <.icon name="hero-photo" class="w-8 h-8 mx-auto text-base-300 mb-2" />
+                        <p class="text-sm text-base-content font-medium">
+                          {gettext("Click or drag an image here")}
+                        </p>
+                        <p class="text-xs text-secondary mt-1">
+                          {gettext("JPG, PNG, WebP up to 5MB")}
+                        </p>
+                      </div>
+                    </div>
+
+                    <%= for entry <- @uploads.test_step_image.entries do %>
+                      <div class="flex items-center gap-3 p-2 bg-base-200 rounded-lg">
+                        <.icon name="hero-document" class="w-4 h-4 text-primary" />
+                        <span class="text-sm flex-1 truncate">{entry.client_name}</span>
+                        <button
+                          type="button"
+                          phx-click="cancel_test_step_image_upload"
+                          phx-value-ref={entry.ref}
+                          class="text-secondary hover:text-error"
+                        >
+                          <.icon name="hero-x-mark" class="w-4 h-4" />
+                        </button>
+                      </div>
+
+                      <%= for err <- upload_errors(@uploads.test_step_image, entry) do %>
+                        <p class="text-error text-xs">{error_to_string(err)}</p>
+                      <% end %>
+                    <% end %>
+
+                    <div class="flex justify-end">
+                      <button
+                        type="submit"
+                        class="btn btn-accent btn-sm"
+                        disabled={@uploads.test_step_image.entries == []}
+                      >
+                        <.icon name="hero-sparkles" class="w-4 h-4 mr-1" />
+                        {gettext("Extract Steps")}
+                      </button>
+                    </div>
+                  </form>
+                </div>
+              <% end %>
+
+              <%= if (@step_type != :grammar_pattern || is_nil(@extracted_grammar_pattern_steps)) && (@step_type != :writing_fill_in || is_nil(@extracted_writing_fill_in_steps)) && (@step_type != :grammar_make_question_answer || is_nil(@extracted_grammar_make_question_answer_steps)) do %>
                 <.form
                   for={@step_form}
                   as={:step}
@@ -2437,7 +2694,8 @@ defmodule MedoruWeb.Teacher.TestLive.Edit do
                         :conjugation,
                         :conjugation_multichoice,
                         :word_order,
-                        :grammar_pattern
+                        :grammar_pattern,
+                        :grammar_make_question_answer
                       ] ->
                         "grammar"
 
@@ -3271,6 +3529,138 @@ defmodule MedoruWeb.Teacher.TestLive.Edit do
                   </div>
                 </div>
               <% end %>
+              <%= if @step_type == :grammar_make_question_answer && @extracted_grammar_make_question_answer_steps do %>
+                <div class="space-y-6">
+                  <%!-- Examples --%>
+                  <%= if @make_question_answer_examples && @make_question_answer_examples != [] do %>
+                    <div class="bg-base-200 rounded-lg p-4 space-y-2">
+                      <div class="text-sm text-secondary mb-1">{gettext("Examples")}</div>
+                      <%= for example <- @make_question_answer_examples do %>
+                        <div class="font-jp text-base-content">
+                          <%= for line <- String.split(example, "\n") do %>
+                            <div>{line}</div>
+                          <% end %>
+                        </div>
+                      <% end %>
+                    </div>
+                  <% end %>
+
+                  <div class="space-y-4">
+                    <h4 class="font-medium">
+                      {gettext("Extracted Steps")}
+                      <span class="badge badge-primary badge-sm ml-2">
+                        {length(@extracted_grammar_make_question_answer_steps)}
+                      </span>
+                    </h4>
+
+                    <%= for {step, index} <- Enum.with_index(@extracted_grammar_make_question_answer_steps) do %>
+                      <div class="bg-base-100 border border-base-200 rounded-lg p-4 space-y-3">
+                        <div class="flex items-center gap-2">
+                          <span class="text-sm text-secondary font-medium">#{step["number"]}</span>
+                        </div>
+
+                        <div>
+                          <label class="label text-xs py-0">
+                            <span class="label-text">{gettext("Requirement")}</span>
+                          </label>
+                          <input
+                            type="text"
+                            value={step["requirement"]}
+                            phx-change="update_extracted_make_question_answer_step"
+                            phx-value-index={index}
+                            phx-value-field="requirement"
+                            phx-debounce="300"
+                            class="input input-bordered input-sm w-full font-jp"
+                          />
+                        </div>
+
+                        <div>
+                          <label class="label text-xs py-0">
+                            <span class="label-text">{gettext("Expected Question")}</span>
+                          </label>
+                          <input
+                            type="text"
+                            value={step["expected_question"]}
+                            phx-change="update_extracted_make_question_answer_step"
+                            phx-value-index={index}
+                            phx-value-field="expected_question"
+                            phx-debounce="300"
+                            class="input input-bordered input-sm w-full font-jp"
+                          />
+                        </div>
+
+                        <div>
+                          <label class="label text-xs py-0">
+                            <span class="label-text">{gettext("Expected Answer")}</span>
+                          </label>
+                          <input
+                            type="text"
+                            value={step["expected_answer"]}
+                            phx-change="update_extracted_make_question_answer_step"
+                            phx-value-index={index}
+                            phx-value-field="expected_answer"
+                            phx-debounce="300"
+                            class="input input-bordered input-sm w-full font-jp"
+                          />
+                        </div>
+
+                        <div>
+                          <label class="label text-xs py-0">
+                            <span class="label-text">
+                              {gettext("Expected Question Reading (kana only)")}
+                            </span>
+                          </label>
+                          <input
+                            type="text"
+                            value={step["expected_question_reading"]}
+                            phx-change="update_extracted_make_question_answer_step"
+                            phx-value-index={index}
+                            phx-value-field="expected_question_reading"
+                            phx-debounce="300"
+                            class="input input-bordered input-sm w-full font-jp"
+                          />
+                        </div>
+
+                        <div>
+                          <label class="label text-xs py-0">
+                            <span class="label-text">
+                              {gettext("Expected Answer Reading (kana only)")}
+                            </span>
+                          </label>
+                          <input
+                            type="text"
+                            value={step["expected_answer_reading"]}
+                            phx-change="update_extracted_make_question_answer_step"
+                            phx-value-index={index}
+                            phx-value-field="expected_answer_reading"
+                            phx-debounce="300"
+                            class="input input-bordered input-sm w-full font-jp"
+                          />
+                        </div>
+                      </div>
+                    <% end %>
+                  </div>
+
+                  <%!-- Actions --%>
+                  <div class="flex justify-end gap-3">
+                    <button
+                      type="button"
+                      phx-click="close_step_form"
+                      class="btn btn-ghost"
+                    >
+                      {gettext("Cancel")}
+                    </button>
+                    <button
+                      type="button"
+                      phx-click="save_make_question_answer_steps"
+                      class="btn btn-primary"
+                    >
+                      <.icon name="hero-plus" class="w-5 h-5 mr-2" />
+                      {gettext("Save All Steps")}
+                    </button>
+                  </div>
+                </div>
+              <% end %>
             </div>
           </div>
         </div>
@@ -3287,6 +3677,7 @@ defmodule MedoruWeb.Teacher.TestLive.Edit do
   defp format_question_type(:fill), do: gettext("Fill in Blank")
   defp format_question_type(:writing), do: gettext("Writing")
   defp format_question_type(:writing_fill_in), do: gettext("Writing Fill In")
+  defp format_question_type(:grammar_make_question_answer), do: gettext("Make Question & Answer")
   defp format_question_type(:listening), do: gettext("Listening")
   defp format_question_type(other), do: to_string(other)
 
@@ -3478,6 +3869,37 @@ defmodule MedoruWeb.Teacher.TestLive.Edit do
   defp normalize_pattern_in_question_data(question_data), do: question_data
 
   # Convert grammar_pattern textareas to lists
+  # Each worked example is a multi-line block; teachers separate multiple
+  # examples with a blank line. Each block keeps its internal newlines.
+  defp normalize_make_question_answer_examples(%{"examples_text" => text} = question_data)
+       when is_binary(text) do
+    examples =
+      text
+      |> String.split(~r/\n\s*\n/, trim: true)
+      |> Enum.map(fn block ->
+        block
+        |> String.split("\n")
+        |> Enum.map(&String.trim/1)
+        |> Enum.reject(&(&1 == ""))
+        |> Enum.join("\n")
+      end)
+      |> Enum.reject(&(&1 == ""))
+
+    question_data
+    |> Map.put("examples", examples)
+    |> Map.delete("examples_text")
+    |> Map.delete("example")
+  end
+
+  defp normalize_make_question_answer_examples(%{"example" => example} = question_data)
+       when is_binary(example) and example != "" do
+    question_data
+    |> Map.put("examples", [String.trim(example)])
+    |> Map.delete("example")
+  end
+
+  defp normalize_make_question_answer_examples(question_data), do: question_data
+
   defp normalize_grammar_pattern_question_data(%{"examples_text" => text} = question_data)
        when is_binary(text) do
     examples =
@@ -3655,7 +4077,8 @@ defmodule MedoruWeb.Teacher.TestLive.Edit do
          :sentence_validation,
          :conjugation,
          :conjugation_multichoice,
-         :word_order
+         :word_order,
+         :grammar_make_question_answer
        ] do
       :grammar
     else
