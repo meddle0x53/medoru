@@ -104,10 +104,13 @@ console.log('cache versions agree')
   const tpl1 = fs.readFileSync(path.join(ROOT, 'lib/medoru_web/live/game_live.html.heex'), 'utf8')
   const tpl2 = fs.readFileSync(path.join(ROOT, 'lib/medoru_web/live/admin/game_live/game.html.heex'), 'utf8')
   const sw = fs.readFileSync(path.join(ROOT, 'priv/static/service-worker.js'), 'utf8')
-  check('public template v=604', tpl1.includes('game.js?v=604') && !tpl1.includes('v=603'))
-  check('admin template v=604', tpl2.includes('game.js?v=604') && !tpl2.includes('v=603'))
-  check('SW precaches v=604', sw.includes('game.js?v=604') && !sw.includes('v=603'))
-  check('SW cache name medoru-v570', sw.includes('medoru-v570') && !sw.includes('medoru-v569'))
+  const v1 = tpl1.match(/game\.js\?v=(\d+)/)?.[1]
+  const v2 = tpl2.match(/game\.js\?v=(\d+)/)?.[1]
+  const v3 = sw.match(/game\.js\?v=(\d+)/)?.[1]
+  check('public template has a cache version', !!v1, String(v1))
+  check('admin template has a cache version', !!v2, String(v2))
+  check('all three agree on the same version', !!v1 && v1 === v2 && v2 === v3, `${v1}/${v2}/${v3}`)
+  check('SW cache name is versioned', /medoru-v\d+/.test(sw), sw.match(/CACHE_NAME = "([^"]+)"/)?.[1])
   const bundle = fs.statSync(path.join(ROOT, 'priv/static/assets/js/game.js'))
   check('bundle exists (fresh build)', bundle.size > 900000, `${bundle.size}`)
 }

@@ -134,8 +134,10 @@ export default class HomeShopScene extends Phaser.Scene {
   }
 
   createShopList() {
-    const startY = 130
-    const rowHeight = 52
+    // 8 rows must clear the Prepare button below (button top ~y=477), so
+    // keep the list tight: start at 116 with 47px spacing and 40px rows.
+    const startY = 116
+    const rowHeight = 47
 
     SHOP_ITEMS.forEach((item, index) => {
       const y = startY + index * rowHeight
@@ -143,7 +145,7 @@ export default class HomeShopScene extends Phaser.Scene {
       const color = canAfford ? 0x2980b9 : 0x555555
       const hover = canAfford ? 0x3498db : 0x555555
 
-      const row = this.createRound3dRow(GAME_CONFIG.width / 2, y, 420, 44, color, hover, () => this.buyItem(item), !canAfford)
+      const row = this.createRound3dRow(GAME_CONFIG.width / 2, y, 420, 40, color, hover, () => this.buyItem(item), !canAfford)
 
       const icon = this.add.text(-180, 0, item.icon, { fontSize: '20px' }).setOrigin(0.5)
       const owned = item.tier ? (this.player.loadout.rollInventory?.[item.tier] || 0) : 0
@@ -161,9 +163,9 @@ export default class HomeShopScene extends Phaser.Scene {
   createPrepareButton() {
     this.createRound3dButton({
       x: GAME_CONFIG.width / 2,
-      y: GAME_CONFIG.height - 50,
+      y: GAME_CONFIG.height - 42,
       width: 220,
-      height: 46,
+      height: 40,
       label: 'Prepare for Battle',
       baseColor: 0x27ae60,
       hoverColor: 0x2ecc71,

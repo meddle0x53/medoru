@@ -2708,6 +2708,20 @@ export default class BattleScene extends Phaser.Scene {
     this.startReadinessChallenge()
   }
 
+  // Unstick the battle after an unexpected error inside the skill pipeline and
+  // surface the message on screen (combat log) so it is visible without a
+  // browser console.
+  recoverFromSkillError(e) {
+    console.error('[battle] skill pipeline error:', e)
+    this.challengeActive = false
+    this.setSkillButtonsEnabled(true)
+    if (this.endTurnBtn) this.endTurnBtn.setVisible(true)
+    try {
+      this.addCombatLog(`⚠ ${e.message}`)
+      this.spawnFloatingText(GAME_CONFIG.width / 2, GAME_CONFIG.height / 2 - 60, `⚠ ${e.message}`, COLORS.danger)
+    } catch (_) { /* logging itself must never throw */ }
+  }
+
   // Grant Setup Defence's Defence pool, honoring the streak combo: the 3rd
   // consecutive use adds bonus Defence equal to the amount accumulated so far
   // this turn (i.e. the accumulated Defence doubles). Returns the total granted.
@@ -2732,9 +2746,19 @@ export default class BattleScene extends Phaser.Scene {
 
     // Weapon attacks with a kanjiChallenge config use the generic resolver.
     if (skill.kanjiChallenge) {
-      this.weaponKanjiChallenge.resolve(skill, ({ challengeResult }) => {
-        this.executeSkill(challengeResult)
-      })
+      try {
+        this.weaponKanjiChallenge.resolve(skill, ({ challengeResult }) => {
+          try {
+            this.executeSkill(challengeResult)
+          } catch (e) {
+            // The drawing challenge completes on an async stack, so this
+            // catch is what keeps a mid-skill error from bricking the battle.
+            this.recoverFromSkillError(e)
+          }
+        })
+      } catch (e) {
+        this.recoverFromSkillError(e)
+      }
       return
     }
 

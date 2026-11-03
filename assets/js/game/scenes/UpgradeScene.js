@@ -241,9 +241,10 @@ export default class UpgradeScene extends Phaser.Scene {
   // ---------- Helpers ----------
 
   createButton(x, y, label, onClick, width = 160, height = 40, color = 0x3498db, hoverColor = 0x2980b9) {
-    const bg = this.add.graphics()
-    bg.fillStyle(color, 0.95)
-    bg.fillRoundedRect(x - width / 2, y - height / 2, width, height, 8)
+    // Rectangle (Shape), not Graphics: the hover handlers below need
+    // setFillStyle, which Graphics does not have.
+    const bg = this.add.rectangle(x, y, width, height, color, 0.95)
+      .setStrokeStyle(2, 0xffffff, 0.15)
 
     const text = this.add.text(x, y, label, {
       ...FONTS.default,

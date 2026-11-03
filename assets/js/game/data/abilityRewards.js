@@ -145,6 +145,7 @@ export function pickRewardAbilities(pool, count, alreadyKnownIds = [], tile = nu
   const known = new Set(alreadyKnownIds)
   const picks = []
   // Abilities are only offered once (charges are gone — D10).
+  const isEligible = (id) => !known.has(id)
   const notPicked = (id) => !picks.includes(id)
 
   const categories = ['weapon', 'shield', 'class']
