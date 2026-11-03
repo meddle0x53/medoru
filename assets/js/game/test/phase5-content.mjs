@@ -7,6 +7,7 @@ import { default as LoadoutScene } from '../scenes/LoadoutScene.js'
 import { apply, UPGRADES, UPGRADES_BY_ID } from '../systems/UpgradeEngine.js'
 import { generateChoices, isValidFor, bumpTier } from '../systems/UpgradeGenerator.js'
 import { ALL_ACTIONS } from '../data/actions.js'
+import { getRewardPool, pickRewardAbilities } from '../data/abilityRewards.js'
 
 let passed = 0, failed = 0
 function check(name, cond, detail = '') {
@@ -186,6 +187,22 @@ console.log('kanji multiplier sanity')
   check('stacked silver perfect slash does NOT one-shot a boss', stacked < bossHp,
     `best hit ~${stacked} vs boss HP ${bossHp}`)
   check('...but it is a meaningful chunk', stacked > bossHp * 0.15, `${stacked}`)
+}
+
+console.log('win-scene ability rewards (regression: isEligible must exist)')
+{
+  const p = freshPlayer()
+  const pool = getRewardPool(p)
+  const known = ['forward_slash', 'heavy_slash', 'quick_stab']
+  let threw = null
+  let picks = []
+  try {
+    picks = pickRewardAbilities(pool, 3, known, { col: 4, type: 'battle' })
+  } catch (e) { threw = e }
+  check('pickRewardAbilities does not throw', threw === null, threw?.message)
+  check('returns requested count when pool allows', picks.length === 3, `${picks.length}`)
+  check('never offers known abilities', picks.every(id => !known.includes(id)), picks.join(','))
+  check('picks are unique', new Set(picks).size === picks.length, picks.join(','))
 }
 
 console.log(`\n${passed} passed, ${failed} failed`)

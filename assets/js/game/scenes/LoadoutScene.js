@@ -1001,11 +1001,13 @@ export default class LoadoutScene extends Phaser.Scene {
     container.add(hitArea)
 
     hitArea.on('dragstart', (pointer) => {
-      this.startDrag(charm, targetType, container, pointer.x, pointer.y)
+      const wp = this.getPointerWorld(pointer)
+      this.startDrag(charm, targetType, container, wp.x, wp.y)
     })
     hitArea.on('drag', (pointer) => {
       if (this.dragClone) {
-        this.dragClone.setPosition(pointer.x, pointer.y)
+        const wp = this.getPointerWorld(pointer)
+        this.dragClone.setPosition(wp.x, wp.y)
       }
     })
     hitArea.on('dragend', (pointer) => {
@@ -1022,6 +1024,14 @@ export default class LoadoutScene extends Phaser.Scene {
     })
 
     return { container, bg, hitArea }
+  }
+
+  // Screen (pointer.x/y) → design-world coordinates. The high-DPI camera
+  // (zoom + negative scroll on DPR ≥ 2 screens) means pointer.x/y are raw
+  // canvas pixels; world objects must use the camera-transformed point or
+  // the drag clone lands far off the pointer.
+  getPointerWorld(pointer) {
+    return this.cameras.main.getWorldPoint(pointer.x, pointer.y)
   }
 
   startDrag(charm, targetType, sourceContainer, x, y) {
@@ -1041,7 +1051,8 @@ export default class LoadoutScene extends Phaser.Scene {
   endDrag(charm, targetType, pointer) {
     if (this.dragClone) {
       this.syncSlotCharmIds()
-      const droppedSlot = this.findDropSlot(pointer.x, pointer.y, targetType)
+      const wp = this.getPointerWorld(pointer)
+      const droppedSlot = this.findDropSlot(wp.x, wp.y, targetType)
 
       if (droppedSlot) {
         this.equipCharmToSlot(charm, targetType, droppedSlot)
@@ -1694,8 +1705,9 @@ export default class LoadoutScene extends Phaser.Scene {
       }))
     })
 
-    // Run upgrades list
-    let y = 150
+    // Run upgrades list (start below the readout grid: 4 rows from y=76
+    // at 20px spacing end ~y=148)
+    let y = 178
     this.tabContent.add(this.add.text(460, y - 18, 'Run Upgrades', {
       ...FONTS.default, fontSize: '13px', color: '#3498db', fontStyle: 'bold',
     }))
@@ -1741,14 +1753,14 @@ export default class LoadoutScene extends Phaser.Scene {
 
   // ---------- UI Helpers ----------
 
-  createMiniButton(x, y, label, color, onClick) {
+  createMiniButton(x, y, label, color, onClick, fontSize = '14px') {
     const container = this.add.container(x, y)
     const h = 32
 
     // Measure label first so the button can expand to fit longer text.
     const text = this.add.text(0, 0, label, {
       ...FONTS.default,
-      fontSize: '14px',
+      fontSize,
       color: '#ffffff',
     }).setOrigin(0.5)
 
@@ -1811,8 +1823,11 @@ export default class LoadoutScene extends Phaser.Scene {
   // ---------- Reward Roll selector (D8) ----------
 
   createRollSelector() {
-    this.rollSelectorContainer = this.add.container(0, 0)
-    this.leftPanel.add(this.rollSelectorContainer)
+    // The strip lives at the bottom of the RIGHT panel (440–940 × 20–520):
+    // the left panel is only 400px wide, which clipped the Rare/Epic chips
+    // under the panel divider. Scene-root container with a high depth so
+    // per-tab content rebuilt later can't cover it.
+    this.rollSelectorContainer = this.add.container(0, 0).setDepth(50)
     this.refreshRollSelector()
   }
 
@@ -1840,20 +1855,21 @@ export default class LoadoutScene extends Phaser.Scene {
 
     const inventory = this.player.loadout.rollInventory || {}
 
-    container.add(this.add.text(40, 482, 'Rolls (tap to use):', {
+    // Single row along the bottom of the right panel.
+    container.add(this.add.text(470, 496, 'Rolls (tap to use):', {
       ...FONTS.default,
       fontSize: '12px',
       color: '#95a5a6',
-    }))
+    }).setOrigin(0, 0.5))
 
     const tiers = ['common', 'uncommon', 'rare', 'epic']
-    let x = 40
-    const y = 504
+    let x = 598
+    const y = 496
     for (const tier of tiers) {
       const count = inventory[tier] || 0
       const label = `${tier[0].toUpperCase()}${tier.slice(1)} ×${count}`
       const color = count > 0 ? 0x2c3e50 : 0x1a1a2e
-      const btn = this.createMiniButton(0, y, label, color, () => this.onRollChipTapped(tier))
+      const btn = this.createMiniButton(0, y, label, color, () => this.onRollChipTapped(tier), '11px')
       const w = btn.hitArea.width
       btn.container.setX(x + w / 2)
       x += w + 8
