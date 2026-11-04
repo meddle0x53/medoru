@@ -1288,9 +1288,11 @@ defmodule MedoruWeb.Teacher.ClassroomLive.Show do
                   <div>
                     <p class="font-medium text-base-content">{classroom_test.test.title}</p>
                     <div class="flex gap-4 text-sm text-secondary mt-1">
-                      <span>{classroom_test.test.total_points} points</span>
+                      <span>{classroom_test.test.total_points} {gettext("points")}</span>
                       <%= if classroom_test.due_date do %>
-                        <span>Due: {Calendar.strftime(classroom_test.due_date, "%b %d, %Y")}</span>
+                        <span>
+                          {gettext("Due:")} {Calendar.strftime(classroom_test.due_date, "%b %d, %Y")}
+                        </span>
                       <% end %>
                     </div>
                   </div>
@@ -1343,7 +1345,9 @@ defmodule MedoruWeb.Teacher.ClassroomLive.Show do
                       <% end %>
                     </div>
                     <p class="text-sm text-secondary">
-                      {attempt.test.title} • {attempt.score || 0}/{attempt.max_score} points
+                      {attempt.test.title} • {attempt.score || 0}/{attempt.max_score} {gettext(
+                        "points"
+                      )}
                     </p>
                     <p class="text-xs text-secondary mt-1">
                       <%= if attempt.completed_at do %>
@@ -1850,7 +1854,7 @@ defmodule MedoruWeb.Teacher.ClassroomLive.Show do
             {display_name(@membership.user, @current_user.id, @is_admin)}
           </p>
           <p class="text-sm text-secondary">
-            Applied {format_relative_time(@membership.inserted_at)}
+            {gettext("Applied")} {format_relative_time(@membership.inserted_at)}
           </p>
         </div>
       </div>
@@ -1910,13 +1914,16 @@ defmodule MedoruWeb.Teacher.ClassroomLive.Show do
             {display_name(@membership.user, @current_user.id, @is_admin)}
           </p>
           <p class="text-sm text-secondary">
-            Joined {Calendar.strftime(@membership.joined_at || @membership.inserted_at, "%b %d, %Y")}
+            {gettext("Joined")} {Calendar.strftime(
+              @membership.joined_at || @membership.inserted_at,
+              "%b %d, %Y"
+            )}
           </p>
         </div>
       </.link>
       <div class="flex items-center gap-4">
         <div class="text-right">
-          <p class="font-semibold text-base-content">{@membership.points} pts</p>
+          <p class="font-semibold text-base-content">{@membership.points} {gettext("pts")}</p>
           <p class="text-xs text-secondary capitalize">{@membership.role}</p>
         </div>
         <button

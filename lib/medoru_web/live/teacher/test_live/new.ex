@@ -195,26 +195,26 @@ defmodule MedoruWeb.Teacher.TestLive.New do
 
   defp time_limit_options do
     [
-      {"1 minute", 60},
-      {"5 minutes", 300},
-      {"10 minutes", 600},
-      {"15 minutes", 900},
-      {"20 minutes", 1200},
-      {"30 minutes", 1800},
-      {"45 minutes", 2700},
-      {"1 hour", 3600},
-      {"1.5 hours", 5400},
-      {"2 hours", 7200}
+      {gettext("1 minute"), 60},
+      {gettext("5 minutes"), 300},
+      {gettext("10 minutes"), 600},
+      {gettext("15 minutes"), 900},
+      {gettext("20 minutes"), 1200},
+      {gettext("30 minutes"), 1800},
+      {gettext("45 minutes"), 2700},
+      {gettext("1 hour"), 3600},
+      {gettext("1.5 hours"), 5400},
+      {gettext("2 hours"), 7200}
     ]
   end
 
   defp max_attempts_options do
     [
-      {"1 attempt", 1},
-      {"2 attempts", 2},
-      {"3 attempts", 3},
-      {"5 attempts", 5},
-      {"10 attempts", 10}
+      {gettext("1 attempt"), 1},
+      {gettext("2 attempts"), 2},
+      {gettext("3 attempts"), 3},
+      {gettext("5 attempts"), 5},
+      {gettext("10 attempts"), 10}
     ]
   end
 end

@@ -637,7 +637,7 @@ defmodule MedoruWeb.Teacher.TestLive.Edit do
             data
             |> normalize_pattern_in_question_data()
             |> normalize_checkbox_values()
-            |> normalize_grammar_pattern_question_data()
+            |> normalize_question_data_for_type(step_type)
 
           Map.put(attrs, "question_data", normalized_data)
 
@@ -840,7 +840,7 @@ defmodule MedoruWeb.Teacher.TestLive.Edit do
           normalized_data =
             data
             |> normalize_pattern_in_question_data()
-            |> normalize_grammar_pattern_question_data()
+            |> normalize_question_data_for_type(step_type)
 
           Map.put(attrs, "question_data", normalized_data)
 
@@ -3900,7 +3900,27 @@ defmodule MedoruWeb.Teacher.TestLive.Edit do
 
   defp normalize_make_question_answer_examples(question_data), do: question_data
 
-  defp normalize_grammar_pattern_question_data(%{"examples_text" => text} = question_data)
+  # Make-question-answer steps keep multi-line example blocks (blank-line
+  # separated), so they must not go through the grammar-pattern normalizer,
+  # which splits examples_text per line. Argument order fits pipelines:
+  # question_data |> normalize_question_data_for_type(step_type)
+  defp normalize_question_data_for_type(question_data, :grammar_make_question_answer) do
+    normalize_make_question_answer_examples(question_data)
+  end
+
+  defp normalize_question_data_for_type(question_data, _step_type) do
+    normalize_grammar_pattern_question_data(question_data)
+  end
+
+  defp normalize_grammar_pattern_question_data(question_data) do
+    question_data
+    |> normalize_examples_text()
+    |> normalize_examples_list()
+    |> normalize_example_string()
+    |> normalize_alt_correct_answers_text()
+  end
+
+  defp normalize_examples_text(%{"examples_text" => text} = question_data)
        when is_binary(text) do
     examples =
       text
@@ -3912,10 +3932,11 @@ defmodule MedoruWeb.Teacher.TestLive.Edit do
     |> Map.put("examples", examples)
     |> Map.delete("examples_text")
     |> Map.delete("example")
-    |> normalize_grammar_pattern_question_data()
   end
 
-  defp normalize_grammar_pattern_question_data(%{"examples" => examples} = question_data)
+  defp normalize_examples_text(question_data), do: question_data
+
+  defp normalize_examples_list(%{"examples" => examples} = question_data)
        when is_list(examples) do
     cleaned =
       examples
@@ -3925,20 +3946,20 @@ defmodule MedoruWeb.Teacher.TestLive.Edit do
     question_data
     |> Map.put("examples", cleaned)
     |> Map.delete("example")
-    |> normalize_grammar_pattern_question_data()
   end
 
-  defp normalize_grammar_pattern_question_data(%{"example" => example} = question_data)
+  defp normalize_examples_list(question_data), do: question_data
+
+  defp normalize_example_string(%{"example" => example} = question_data)
        when is_binary(example) and example != "" do
     question_data
     |> Map.put("examples", [String.trim(example)])
     |> Map.delete("example")
-    |> normalize_grammar_pattern_question_data()
   end
 
-  defp normalize_grammar_pattern_question_data(
-         %{"alt_correct_answers_text" => text} = question_data
-       )
+  defp normalize_example_string(question_data), do: question_data
+
+  defp normalize_alt_correct_answers_text(%{"alt_correct_answers_text" => text} = question_data)
        when is_binary(text) do
     answers =
       text
@@ -3949,10 +3970,9 @@ defmodule MedoruWeb.Teacher.TestLive.Edit do
     question_data
     |> Map.put("alt_correct_answers", answers)
     |> Map.delete("alt_correct_answers_text")
-    |> normalize_grammar_pattern_question_data()
   end
 
-  defp normalize_grammar_pattern_question_data(question_data), do: question_data
+  defp normalize_alt_correct_answers_text(question_data), do: question_data
 
   # Ensure each element has a type field based on its structure
   defp add_type_to_element(%{"type" => _} = element), do: element

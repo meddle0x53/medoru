@@ -10,61 +10,92 @@ defmodule Medoru.Grammar.ReadingConverter do
   import Ecto.Query
 
   alias Medoru.Content.{Kanji, KanjiReading, Word}
-  alias Medoru.Grammar.Tokenizer
   alias Medoru.Repo
 
   @punctuation_pattern ~r/[\s。、！？!?,.・]+/u
 
-  @doc """
-  Converts a Japanese sentence to a kana-only reading string.
-
-  1. Tokenizes with `Medoru.Grammar.Tokenizer`.
-  2. Known words (dictionary or conjugated forms) use the word's reading.
-  3. Unknown words fall back to per-kanji readings from `kanji_readings`
-     (kun'yomi preferred, then on'yomi). Kanji without any reading are
-     kept as-is.
-  4. Kana passes through; punctuation is dropped.
-  """
-  @spec to_kana(String.t()) :: String.t()
-  def to_kana(sentence) when is_binary(sentence) do
-    sentence
-    |> Tokenizer.tokenize()
-    |> Enum.map_join(&token_to_kana/1)
-  end
-
-  def to_kana(_), do: ""
-
-  @doc """
-  Returns the kana reading with all punctuation (Japanese and ASCII) and
-  whitespace stripped. This is the form used for grading comparisons.
-  """
+  # Katakana (ァ-ヶ) mapped to hiragana by subtracting 0x60 so that
+  # katakana/hiragana spellings of the same word compare equal.
   @spec normalize_for_comparison(String.t()) :: String.t()
   def normalize_for_comparison(sentence) when is_binary(sentence) do
     sentence
     |> to_kana()
     |> String.replace(@punctuation_pattern, "")
+    |> katakana_to_hiragana()
   end
 
   def normalize_for_comparison(_), do: ""
 
-  defp token_to_kana(%{word_id: word_id, text: text}) when is_binary(word_id) do
-    case Repo.get(Word, word_id) do
-      %Word{reading: reading} when is_binary(reading) and reading != "" ->
-        if contains_kanji?(reading), do: chars_to_kana(text), else: reading
+  defp katakana_to_hiragana(string) do
+    string
+    |> String.to_charlist()
+    |> Enum.map_join(fn
+      cp when cp >= 0x30A1 and cp <= 0x30F6 -> <<cp - 0x60::utf8>>
+      cp -> <<cp::utf8>>
+    end)
+  end
 
-      _ ->
-        chars_to_kana(text)
+  @doc """
+  Converts a Japanese sentence to a kana-only reading string.
+
+  Uses greedy longest-match segmentation against the words dictionary, so
+  on'yomi compounds like 空港 resolve to their word reading (くうこう)
+  instead of per-kanji kun'yomi guesses. Fallback for unmatched kanji is
+  per-kanji readings from `kanji_readings` (kun'yomi preferred, then
+  on'yomi); kanji without any reading are kept as-is. Kana passes through;
+  punctuation is dropped.
+  """
+  @spec to_kana(String.t()) :: String.t()
+  def to_kana(sentence) when is_binary(sentence) do
+    sentence
+    |> String.graphemes()
+    |> greedy_to_kana([])
+  end
+
+  def to_kana(_), do: ""
+
+  @max_word_length 8
+
+  defp greedy_to_kana([], acc), do: acc |> Enum.reverse() |> Enum.join()
+
+  defp greedy_to_kana([char | rest] = chars, acc) do
+    cond do
+      kana?(char) ->
+        greedy_to_kana(rest, [char | acc])
+
+      kanji?(char) ->
+        {reading, remaining} = take_longest_word(chars)
+        greedy_to_kana(remaining, [reading | acc])
+
+      true ->
+        # Punctuation, symbols, whitespace: dropped.
+        greedy_to_kana(rest, acc)
     end
   end
 
-  defp token_to_kana(%{text: text}), do: chars_to_kana(text)
+  # Tries progressively shorter prefixes of the remaining characters as
+  # whole-word lookups (so 空港 -> くうこう, 行く -> いく); falls back to a
+  # single kanji's reading when no word matches.
+  defp take_longest_word(chars) do
+    limit = min(length(chars), @max_word_length)
 
-  # Tries the whole surface form as a word first, then falls back to
-  # per-character readings.
-  defp chars_to_kana(text) do
-    case lookup_word_reading(text) do
-      nil -> Enum.map_join(String.graphemes(text), &char_to_kana/1)
-      reading -> reading
+    matched =
+      Enum.reduce_while(limit..1//-1, nil, fn len, _acc ->
+        candidate = chars |> Enum.take(len) |> Enum.join()
+
+        case lookup_word_reading(candidate) do
+          nil -> {:cont, nil}
+          reading -> {:halt, {reading, Enum.drop(chars, len)}}
+        end
+      end)
+
+    case matched do
+      nil ->
+        [char | rest] = chars
+        {lookup_kanji_reading(char) || char, rest}
+
+      result ->
+        result
     end
   end
 
@@ -82,19 +113,6 @@ defmodule Medoru.Grammar.ReadingConverter do
 
       _ ->
         nil
-    end
-  end
-
-  defp char_to_kana(char) do
-    cond do
-      kana?(char) ->
-        char
-
-      kanji?(char) ->
-        lookup_kanji_reading(char) || char
-
-      true ->
-        ""
     end
   end
 

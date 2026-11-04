@@ -523,7 +523,7 @@ defmodule MedoruWeb.Teacher.TestLive.Publish do
                 <div class="space-y-3">
                   <div class="flex justify-between text-sm">
                     <span class="text-secondary">{gettext("Steps:")}</span>
-                    <span class="font-medium">{@test.total_points} points</span>
+                    <span class="font-medium">{@test.total_points} {gettext("points")}</span>
                   </div>
                   <div class="flex justify-between text-sm">
                     <span class="text-secondary">{gettext("Time Limit:")}</span>
@@ -531,7 +531,7 @@ defmodule MedoruWeb.Teacher.TestLive.Publish do
                       <%= if @test.time_limit_seconds do %>
                         {format_duration(@test.time_limit_seconds)}
                       <% else %>
-                        Unlimited
+                        {gettext("Unlimited")}
                       <% end %>
                     </span>
                   </div>

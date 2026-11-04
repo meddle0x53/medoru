@@ -154,7 +154,7 @@ msgstr ""
 #: lib/medoru_web/live/admin/game_live/index.ex:68
 #: lib/medoru_web/live/admin/test_live/index.ex:68
 #: lib/medoru_web/live/teacher/classroom_live/index.ex:125
-#: lib/medoru_web/live/teacher/classroom_live/show.ex:1810
+#: lib/medoru_web/live/teacher/classroom_live/show.ex:1814
 #: lib/medoru_web/live/teacher/custom_lesson_live/index.ex:212
 #: lib/medoru_web/live/teacher/custom_lesson_live/index.ex:274
 #: lib/medoru_web/live/teacher/test_live/index.ex:151
@@ -190,8 +190,8 @@ msgid "Back to Lessons"
 msgstr ""
 
 #: lib/medoru_web/live/classroom_live/test.ex:1589
-#: lib/medoru_web/live/classroom_live/test_results.ex:332
-#: lib/medoru_web/live/classroom_live/test_results.ex:618
+#: lib/medoru_web/live/classroom_live/test_results.ex:338
+#: lib/medoru_web/live/classroom_live/test_results.ex:642
 #, elixir-autogen, elixir-format
 msgid "Back to Tests"
 msgstr ""
@@ -265,7 +265,7 @@ msgstr ""
 #: lib/medoru_web/live/teacher/classroom_live/generate_kanji_drawing_test.ex:518
 #: lib/medoru_web/live/teacher/classroom_live/generate_vocabulary_test.ex:773
 #: lib/medoru_web/live/teacher/classroom_live/new.ex:149
-#: lib/medoru_web/live/teacher/classroom_live/show.ex:1534
+#: lib/medoru_web/live/teacher/classroom_live/show.ex:1538
 #: lib/medoru_web/live/teacher/custom_lesson_live/from_image.ex:446
 #: lib/medoru_web/live/teacher/custom_lesson_live/new.ex:200
 #: lib/medoru_web/live/teacher/game_live/form.ex:807
@@ -337,7 +337,7 @@ msgstr ""
 #: lib/medoru_web/live/lesson_live/index.html.heex:81
 #: lib/medoru_web/live/lesson_live/index.html.heex:81
 #: lib/medoru_web/live/teacher/classroom_live/analytics.ex:132
-#: lib/medoru_web/live/teacher/classroom_live/show.ex:1350
+#: lib/medoru_web/live/teacher/classroom_live/show.ex:1354
 #: lib/medoru_web/live/teacher/test_live/show.ex:610
 #, elixir-autogen, elixir-format
 msgid "Completed"
@@ -371,7 +371,7 @@ msgstr ""
 msgid "Continue →"
 msgstr ""
 
-#: lib/medoru_web/live/classroom_live/test_results.ex:395
+#: lib/medoru_web/live/classroom_live/test_results.ex:401
 #: lib/medoru_web/live/lesson_test_live/complete.ex:70
 #: lib/medoru_web/live/teacher/classroom_live/test_preview.ex:622
 #: lib/medoru_web/live/word_set_live/test.html.heex:21
@@ -379,7 +379,7 @@ msgstr ""
 msgid "Correct"
 msgstr ""
 
-#: lib/medoru_web/live/classroom_live/test_results.ex:469
+#: lib/medoru_web/live/classroom_live/test_results.ex:475
 #, elixir-autogen, elixir-format
 msgid "Correct Answer:"
 msgstr ""
@@ -569,13 +569,13 @@ msgstr ""
 msgid "Examples (one per line, max 5)"
 msgstr ""
 
-#: lib/medoru_web/live/classroom_live/test_results.ex:366
+#: lib/medoru_web/live/classroom_live/test_results.ex:372
 #, elixir-autogen, elixir-format
 msgid "Excellent!"
 msgstr ""
 
 #: lib/medoru_web/live/classroom_live/custom_lesson.ex:1108
-#: lib/medoru_web/live/classroom_live/test_results.ex:480
+#: lib/medoru_web/live/classroom_live/test_results.ex:486
 #, elixir-autogen, elixir-format
 msgid "Explanation:"
 msgstr ""
@@ -667,7 +667,7 @@ msgstr ""
 msgid "Finish Test"
 msgstr ""
 
-#: lib/medoru_web/live/classroom_live/test_results.ex:368
+#: lib/medoru_web/live/classroom_live/test_results.ex:374
 #, elixir-autogen, elixir-format
 msgid "Good Job!"
 msgstr ""
@@ -693,7 +693,7 @@ msgstr ""
 msgid "Inactive"
 msgstr ""
 
-#: lib/medoru_web/live/classroom_live/test_results.ex:399
+#: lib/medoru_web/live/classroom_live/test_results.ex:405
 #: lib/medoru_web/live/teacher/classroom_live/test_preview.ex:626
 #: lib/medoru_web/live/teacher/classroom_live/test_preview.ex:762
 #: lib/medoru_web/live/word_set_live/test.html.heex:25
@@ -754,7 +754,7 @@ msgstr ""
 msgid "Kanji Learned"
 msgstr ""
 
-#: lib/medoru_web/live/classroom_live/test_results.ex:370
+#: lib/medoru_web/live/classroom_live/test_results.ex:376
 #, elixir-autogen, elixir-format
 msgid "Keep Practicing!"
 msgstr ""
@@ -891,7 +891,7 @@ msgid "Next Question"
 msgstr ""
 
 #: lib/medoru_web/live/classroom_live/test_results.ex:64
-#: lib/medoru_web/live/classroom_live/test_results.ex:101
+#: lib/medoru_web/live/classroom_live/test_results.ex:102
 #, elixir-autogen, elixir-format
 msgid "No completed test found."
 msgstr ""
@@ -931,8 +931,8 @@ msgstr ""
 msgid "No words found"
 msgstr ""
 
-#: lib/medoru_web/live/classroom_live/test_results.ex:436
-#: lib/medoru_web/live/classroom_live/test_results.ex:463
+#: lib/medoru_web/live/classroom_live/test_results.ex:442
+#: lib/medoru_web/live/classroom_live/test_results.ex:469
 #, elixir-autogen, elixir-format
 msgid "Not answered"
 msgstr ""
@@ -1008,7 +1008,9 @@ msgstr ""
 #: lib/medoru_web/live/teacher/kanji_falling_game_live/show.html.heex:19
 #: lib/medoru_web/live/teacher/radical_hunt_game_live/show.html.heex:19
 #: lib/medoru_web/live/teacher/radical_hunt_game_live/show.html.heex:19
+#: lib/medoru_web/live/teacher/test_live/show.ex:237
 #: lib/medoru_web/live/teacher/test_live/show.ex:487
+#: lib/medoru_web/live/teacher/test_live/show.ex:559
 #: lib/medoru_web/live/teacher/words_falling_game_live/show.html.heex:87
 #: lib/medoru_web/live/teacher/words_falling_game_live/show.html.heex:87
 #, elixir-autogen, elixir-format
@@ -1044,6 +1046,8 @@ msgstr ""
 #: lib/medoru_web/live/teacher/test_live/index.ex:144
 #: lib/medoru_web/live/teacher/test_live/index.ex:411
 #: lib/medoru_web/live/teacher/test_live/show.ex:451
+#: lib/medoru_web/live/teacher/test_live/show.ex:593
+#: lib/medoru_web/live/teacher/test_live/show.ex:618
 #: lib/medoru_web/live/teacher/words_falling_game_live/show.html.heex:35
 #: lib/medoru_web/live/teacher/words_falling_game_live/show.html.heex:35
 #, elixir-autogen, elixir-format
@@ -1065,13 +1069,13 @@ msgstr ""
 msgid "Question %{current} of %{total}"
 msgstr ""
 
-#: lib/medoru_web/live/classroom_live/test_results.ex:391
-#: lib/medoru_web/live/classroom_live/test_results.ex:590
+#: lib/medoru_web/live/classroom_live/test_results.ex:397
+#: lib/medoru_web/live/classroom_live/test_results.ex:612
 #, elixir-autogen, elixir-format
 msgid "Question %{number}"
 msgstr ""
 
-#: lib/medoru_web/live/classroom_live/test_results.ex:377
+#: lib/medoru_web/live/classroom_live/test_results.ex:383
 #, elixir-autogen, elixir-format
 msgid "Question Review"
 msgstr ""
@@ -1254,14 +1258,14 @@ msgstr ""
 msgid "Test Complete!"
 msgstr ""
 
-#: lib/medoru_web/live/classroom_live/test_results.ex:335
-#: lib/medoru_web/live/classroom_live/test_results.ex:525
+#: lib/medoru_web/live/classroom_live/test_results.ex:341
+#: lib/medoru_web/live/classroom_live/test_results.ex:544
 #, elixir-autogen, elixir-format
 msgid "Test Results"
 msgstr ""
 
 #: lib/medoru_web/live/classroom_live/test_results.ex:76
-#: lib/medoru_web/live/classroom_live/test_results.ex:114
+#: lib/medoru_web/live/classroom_live/test_results.ex:115
 #, elixir-autogen, elixir-format
 msgid "Test Results - %{title}"
 msgstr ""
@@ -1495,15 +1499,15 @@ msgstr ""
 msgid "You've completed all questions in this lesson test."
 msgstr ""
 
-#: lib/medoru_web/live/classroom_live/test_results.ex:435
-#: lib/medoru_web/live/classroom_live/test_results.ex:457
-#: lib/medoru_web/live/classroom_live/test_results.ex:462
-#: lib/medoru_web/live/classroom_live/test_results.ex:596
+#: lib/medoru_web/live/classroom_live/test_results.ex:441
+#: lib/medoru_web/live/classroom_live/test_results.ex:463
+#: lib/medoru_web/live/classroom_live/test_results.ex:468
+#: lib/medoru_web/live/classroom_live/test_results.ex:618
 #, elixir-autogen, elixir-format
 msgid "Your Answer:"
 msgstr ""
 
-#: lib/medoru_web/live/classroom_live/test_results.ex:341
+#: lib/medoru_web/live/classroom_live/test_results.ex:347
 #, elixir-autogen, elixir-format
 msgid "Your Score"
 msgstr ""
@@ -1677,7 +1681,7 @@ msgstr ""
 #: lib/medoru_web/live/admin/test_live/index.ex:90
 #: lib/medoru_web/live/classroom_live/index.ex:555
 #: lib/medoru_web/live/teacher/classroom_live/show.ex:619
-#: lib/medoru_web/live/teacher/classroom_live/show.ex:1601
+#: lib/medoru_web/live/teacher/classroom_live/show.ex:1605
 #: lib/medoru_web/live/word_book_live/index.ex:280
 #: lib/medoru_web/live/word_set_live/index.ex:427
 #, elixir-autogen, elixir-format
@@ -1689,6 +1693,7 @@ msgstr ""
 #: lib/medoru_web/live/admin/user_live/index/index.html.heex:122
 #: lib/medoru_web/live/classroom_live/index.ex:251
 #: lib/medoru_web/live/classroom_live/show.ex:1766
+#: lib/medoru_web/live/teacher/classroom_live/show.ex:1917
 #, elixir-autogen, elixir-format
 msgid "Joined"
 msgstr ""
@@ -1857,7 +1862,7 @@ msgstr ""
 #: lib/medoru_web/live/classroom_live/index.ex:551
 #: lib/medoru_web/live/classroom_live/show.ex:2621
 #: lib/medoru_web/live/messages_live/show.html.heex:347
-#: lib/medoru_web/live/teacher/classroom_live/show.ex:1742
+#: lib/medoru_web/live/teacher/classroom_live/show.ex:1746
 #: lib/medoru_web/live/teacher/dashboard_live.ex:38
 #: lib/medoru_web/live/teacher/dashboard_live/dashboard.html.heex:5
 #: lib/medoru_web/live/user_live/show/profile_page.html.heex:58
@@ -2177,7 +2182,7 @@ msgid "Submit"
 msgstr ""
 
 #: lib/medoru_web/live/classroom_live/custom_lesson_test.ex:609
-#: lib/medoru_web/live/classroom_live/test_results.ex:275
+#: lib/medoru_web/live/classroom_live/test_results.ex:281
 #: lib/medoru_web/live/daily_test_live.ex:760
 #: lib/medoru_web/live/daily_test_live/complete.ex:236
 #: lib/medoru_web/live/lesson_test_live/show.ex:1203
@@ -2799,9 +2804,9 @@ msgstr ""
 #: lib/medoru_web/live/admin/classroom_live/index.ex:50
 #: lib/medoru_web/live/admin/dashboard_live/dashboard.html.heex:410
 #: lib/medoru_web/live/teacher/classroom_live/index.ex:119
-#: lib/medoru_web/live/teacher/classroom_live/show.ex:1306
-#: lib/medoru_web/live/teacher/classroom_live/show.ex:1751
-#: lib/medoru_web/live/teacher/classroom_live/show.ex:1804
+#: lib/medoru_web/live/teacher/classroom_live/show.ex:1308
+#: lib/medoru_web/live/teacher/classroom_live/show.ex:1755
+#: lib/medoru_web/live/teacher/classroom_live/show.ex:1808
 #, elixir-autogen, elixir-format
 msgid "Active"
 msgstr ""
@@ -2826,7 +2831,7 @@ msgstr ""
 #: lib/medoru_web/live/admin/word_live/form/form_template.html.heex:660
 #: lib/medoru_web/live/admin/word_live/form/form_template.html.heex:773
 #: lib/medoru_web/live/admin/word_live/form/relations_modal.html.heex:228
-#: lib/medoru_web/live/teacher/classroom_live/show.ex:1870
+#: lib/medoru_web/live/teacher/classroom_live/show.ex:1874
 #, elixir-autogen, elixir-format
 msgid "Approve"
 msgstr ""
@@ -2836,7 +2841,7 @@ msgstr ""
 msgid "Are you sure you want to close this classroom? No new students will be able to join."
 msgstr ""
 
-#: lib/medoru_web/live/teacher/classroom_live/show.ex:1925
+#: lib/medoru_web/live/teacher/classroom_live/show.ex:1932
 #, elixir-autogen, elixir-format
 msgid "Are you sure you want to remove this student?"
 msgstr ""
@@ -2860,8 +2865,8 @@ msgid "Classroom Members"
 msgstr ""
 
 #: lib/medoru_web/live/teacher/classroom_live/new.ex:78
-#: lib/medoru_web/live/teacher/classroom_live/show.ex:1408
-#: lib/medoru_web/live/teacher/classroom_live/show.ex:1544
+#: lib/medoru_web/live/teacher/classroom_live/show.ex:1412
+#: lib/medoru_web/live/teacher/classroom_live/show.ex:1548
 #, elixir-autogen, elixir-format
 msgid "Classroom Name"
 msgstr ""
@@ -2872,7 +2877,7 @@ msgstr ""
 msgid "Classroom Rankings"
 msgstr ""
 
-#: lib/medoru_web/live/teacher/classroom_live/show.ex:1396
+#: lib/medoru_web/live/teacher/classroom_live/show.ex:1400
 #, elixir-autogen, elixir-format
 msgid "Classroom Settings"
 msgstr ""
@@ -2889,7 +2894,7 @@ msgstr ""
 
 #: lib/medoru_web/live/admin/classroom_live/index.ex:60
 #: lib/medoru_web/live/teacher/classroom_live/index.ex:131
-#: lib/medoru_web/live/teacher/classroom_live/show.ex:1816
+#: lib/medoru_web/live/teacher/classroom_live/show.ex:1820
 #, elixir-autogen, elixir-format
 msgid "Closed"
 msgstr ""
@@ -2978,7 +2983,7 @@ msgid "No members yet. Share your invite code to get started."
 msgstr ""
 
 #: lib/medoru_web/live/teacher/classroom_live/analytics.ex:233
-#: lib/medoru_web/live/teacher/classroom_live/show.ex:1323
+#: lib/medoru_web/live/teacher/classroom_live/show.ex:1325
 #, elixir-autogen, elixir-format
 msgid "No test attempts yet."
 msgstr ""
@@ -3017,18 +3022,18 @@ msgstr ""
 #: lib/medoru_web/live/admin/word_live/form/form_template.html.heex:781
 #: lib/medoru_web/live/admin/word_live/form/relations_modal.html.heex:237
 #: lib/medoru_web/live/cookie_consent_live.ex:34
-#: lib/medoru_web/live/teacher/classroom_live/show.ex:1863
+#: lib/medoru_web/live/teacher/classroom_live/show.ex:1867
 #, elixir-autogen, elixir-format
 msgid "Reject"
 msgstr ""
 
-#: lib/medoru_web/live/teacher/classroom_live/show.ex:1341
-#: lib/medoru_web/live/teacher/classroom_live/show.ex:1369
+#: lib/medoru_web/live/teacher/classroom_live/show.ex:1343
+#: lib/medoru_web/live/teacher/classroom_live/show.ex:1373
 #, elixir-autogen, elixir-format
 msgid "Reset"
 msgstr ""
 
-#: lib/medoru_web/live/teacher/classroom_live/show.ex:1363
+#: lib/medoru_web/live/teacher/classroom_live/show.ex:1367
 #, elixir-autogen, elixir-format
 msgid "Reset this test for %{name}? They will be able to retake it."
 msgstr ""
@@ -3043,7 +3048,7 @@ msgstr ""
 msgid "Share this code with students so they can join your classroom."
 msgstr ""
 
-#: lib/medoru_web/live/teacher/classroom_live/show.ex:1352
+#: lib/medoru_web/live/teacher/classroom_live/show.ex:1356
 #, elixir-autogen, elixir-format
 msgid "Started"
 msgstr ""
@@ -3052,14 +3057,14 @@ msgstr ""
 #: lib/medoru_web/live/admin/custom_lesson_live/index.ex:90
 #: lib/medoru_web/live/admin/game_live/index.ex:88
 #: lib/medoru_web/live/admin/test_live/index.ex:88
-#: lib/medoru_web/live/teacher/classroom_live/show.ex:1596
+#: lib/medoru_web/live/teacher/classroom_live/show.ex:1600
 #: lib/medoru_web/live/teacher/words_falling_game_live/show.html.heex:32
 #: lib/medoru_web/live/teacher/words_falling_game_live/show.html.heex:32
 #, elixir-autogen, elixir-format
 msgid "Status"
 msgstr ""
 
-#: lib/medoru_web/live/teacher/classroom_live/show.ex:1319
+#: lib/medoru_web/live/teacher/classroom_live/show.ex:1321
 #, elixir-autogen, elixir-format
 msgid "Student Attempts"
 msgstr ""
@@ -3112,7 +3117,7 @@ msgstr ""
 msgid "Total Points"
 msgstr ""
 
-#: lib/medoru_web/live/teacher/classroom_live/show.ex:1549
+#: lib/medoru_web/live/teacher/classroom_live/show.ex:1553
 #, elixir-autogen, elixir-format
 msgid "URL Slug"
 msgstr ""
@@ -3202,8 +3207,8 @@ msgstr ""
 #: lib/medoru_web/live/admin/word_class_live/form/form_template.html.heex:59
 #: lib/medoru_web/live/admin/word_class_live/index/index.html.heex:22
 #: lib/medoru_web/live/teacher/classroom_live/new.ex:105
-#: lib/medoru_web/live/teacher/classroom_live/show.ex:1426
-#: lib/medoru_web/live/teacher/classroom_live/show.ex:1555
+#: lib/medoru_web/live/teacher/classroom_live/show.ex:1430
+#: lib/medoru_web/live/teacher/classroom_live/show.ex:1559
 #: lib/medoru_web/live/teacher/custom_lesson_live/edit.ex:785
 #: lib/medoru_web/live/teacher/custom_lesson_live/from_image.ex:319
 #: lib/medoru_web/live/teacher/grammar_lesson_live/form/form_template.html.heex:54
@@ -3401,12 +3406,15 @@ msgstr ""
 #: lib/medoru_web/live/kanji_falling_game_live/play.html.heex:567
 #: lib/medoru_web/live/kanji_falling_game_live/play.html.heex:567
 #: lib/medoru_web/live/teacher/classroom_live/analytics.ex:180
+#: lib/medoru_web/live/teacher/classroom_live/show.ex:1291
+#: lib/medoru_web/live/teacher/classroom_live/show.ex:1348
 #: lib/medoru_web/live/teacher/kana_falling_game_live/show.html.heex:122
 #: lib/medoru_web/live/teacher/kana_falling_game_live/show.html.heex:122
 #: lib/medoru_web/live/teacher/kanji_falling_game_live/show.html.heex:148
 #: lib/medoru_web/live/teacher/kanji_falling_game_live/show.html.heex:148
 #: lib/medoru_web/live/teacher/radical_hunt_game_live/show.html.heex:117
 #: lib/medoru_web/live/teacher/radical_hunt_game_live/show.html.heex:117
+#: lib/medoru_web/live/teacher/test_live/publish.ex:526
 #: lib/medoru_web/live/test_live/index.html.heex:73
 #: lib/medoru_web/live/test_live/index.html.heex:73
 #, elixir-autogen, elixir-format
@@ -3449,6 +3457,7 @@ msgstr ""
 #: lib/medoru_web/live/radical_hunt_game_live/play.html.heex:218
 #: lib/medoru_web/live/teacher/classroom_live/analytics.ex:213
 #: lib/medoru_web/live/teacher/classroom_live/analytics.ex:260
+#: lib/medoru_web/live/teacher/classroom_live/show.ex:1926
 #: lib/medoru_web/live/teacher/game_live/show.ex:277
 #: lib/medoru_web/live/teacher/kana_falling_game_live/show.html.heex:55
 #: lib/medoru_web/live/teacher/kana_falling_game_live/show.html.heex:55
@@ -3467,6 +3476,9 @@ msgstr ""
 
 #: lib/medoru_web/live/teacher/test_live/show.ex:303
 #: lib/medoru_web/live/teacher/test_live/show.ex:478
+#: lib/medoru_web/live/teacher/test_live/show.ex:512
+#: lib/medoru_web/live/teacher/test_live/show.ex:550
+#: lib/medoru_web/live/teacher/test_live/show.ex:584
 #, elixir-autogen, elixir-format
 msgid "Add Steps"
 msgstr ""
@@ -3523,12 +3535,14 @@ msgid "Create New Test"
 msgstr ""
 
 #: lib/medoru_web/live/teacher/test_live/index.ex:113
+#: lib/medoru_web/live/teacher/test_live/index.ex:294
 #: lib/medoru_web/live/teacher/test_live/new.ex:26
 #: lib/medoru_web/live/teacher/test_live/new.ex:181
 #: lib/medoru_web/live/teacher/test_live/show.ex:469
 #: lib/medoru_web/live/teacher/test_live/show.ex:503
 #: lib/medoru_web/live/teacher/test_live/show.ex:541
 #: lib/medoru_web/live/teacher/test_live/show.ex:575
+#: lib/medoru_web/live/teacher/test_live/show.ex:609
 #: lib/medoru_web/live/word_set_live/show.ex:618
 #: lib/medoru_web/live/word_set_live/test_config.ex:290
 #, elixir-autogen, elixir-format
@@ -3800,6 +3814,7 @@ msgstr ""
 #: lib/medoru_web/live/teacher/test_live/index.ex:343
 #: lib/medoru_web/live/teacher/test_live/new.ex:151
 #: lib/medoru_web/live/teacher/test_live/publish.ex:394
+#: lib/medoru_web/live/teacher/test_live/publish.ex:534
 #, elixir-autogen, elixir-format
 msgid "Unlimited"
 msgstr ""
@@ -3863,6 +3878,7 @@ msgstr ""
 #: lib/medoru_web/live/teacher/custom_lesson_live/index.ex:292
 #: lib/medoru_web/live/teacher/grammar_lesson_live/index/index.html.heex:104
 #: lib/medoru_web/live/teacher/test_live/index.ex:310
+#: lib/medoru_web/live/teacher/test_live/show.ex:585
 #, elixir-autogen, elixir-format
 msgid "steps"
 msgstr ""
@@ -4005,6 +4021,7 @@ msgstr ""
 msgid "Due dates help students prioritize"
 msgstr ""
 
+#: lib/medoru_web/live/teacher/classroom_live/show.ex:1294
 #: lib/medoru_web/live/teacher/test_live/publish.ex:434
 #, elixir-autogen, elixir-format
 msgid "Due:"
@@ -4183,7 +4200,7 @@ msgstr ""
 msgid "Publishing Options"
 msgstr ""
 
-#: lib/medoru_web/live/classroom_live/test_results.ex:572
+#: lib/medoru_web/live/classroom_live/test_results.ex:594
 #: lib/medoru_web/live/teacher/test_live/edit.ex:2787
 #: lib/medoru_web/live/teacher/test_live/edit.ex:2837
 #: lib/medoru_web/live/teacher/test_live/edit.ex:3358
@@ -4234,6 +4251,7 @@ msgid "Remove option"
 msgstr ""
 
 #: lib/medoru_web/live/teacher/test_live/publish.ex:486
+#: lib/medoru_web/live/teacher/test_live/show.ex:254
 #, elixir-autogen, elixir-format
 msgid "Republish"
 msgstr ""
@@ -4481,7 +4499,7 @@ msgstr ""
 #: lib/medoru_web/live/moderator/kanji_live/form/form_template.html.heex:380
 #: lib/medoru_web/live/moderator/kanji_live/index/index.html.heex:116
 #: lib/medoru_web/live/moderator/word_live/index/index.html.heex:147
-#: lib/medoru_web/live/teacher/classroom_live/show.ex:1399
+#: lib/medoru_web/live/teacher/classroom_live/show.ex:1403
 #: lib/medoru_web/live/teacher/custom_lesson_live/index.ex:318
 #: lib/medoru_web/live/teacher/game_live/show.ex:150
 #: lib/medoru_web/live/teacher/kana_falling_game_live/show.html.heex:30
@@ -4679,7 +4697,7 @@ msgstr ""
 msgid "Member since %{date}"
 msgstr ""
 
-#: lib/medoru_web/live/teacher/classroom_live/show.ex:1744
+#: lib/medoru_web/live/teacher/classroom_live/show.ex:1748
 #: lib/medoru_web/live/user_live/show/profile_page.html.heex:62
 #, elixir-autogen, elixir-format
 msgid "Student"
@@ -4820,7 +4838,7 @@ msgid "Required"
 msgstr ""
 
 #: lib/medoru_web/live/settings_live/profile/profile.html.heex:596
-#: lib/medoru_web/live/teacher/classroom_live/show.ex:1537
+#: lib/medoru_web/live/teacher/classroom_live/show.ex:1541
 #: lib/medoru_web/live/teacher/game_live/form.ex:800
 #: lib/medoru_web/live/word_book_live/form.ex:246
 #: lib/medoru_web/live/word_set_live/form.ex:188
@@ -4988,6 +5006,7 @@ msgstr ""
 #: lib/medoru_web/live/admin/test_live/index.ex:131
 #: lib/medoru_web/live/admin/test_live/index.ex:186
 #: lib/medoru_web/live/teacher/custom_lesson_live/index.ex:340
+#: lib/medoru_web/live/teacher/test_live/show.ex:250
 #, elixir-autogen, elixir-format
 msgid "Archive"
 msgstr ""
@@ -7279,7 +7298,7 @@ msgstr ""
 msgid "Link to Word (required for picture questions)"
 msgstr ""
 
-#: lib/medoru_web/live/teacher/test_live/edit.ex:4006
+#: lib/medoru_web/live/teacher/test_live/edit.ex:4026
 #, elixir-autogen, elixir-format
 msgid "Missing word links for %{count} option(s). Please search and select words for all options."
 msgstr ""
@@ -7367,12 +7386,12 @@ msgstr ""
 msgid "Start learning by completing lessons or browsing vocabulary."
 msgstr ""
 
-#: lib/medoru_web/live/teacher/test_live/edit.ex:4064
+#: lib/medoru_web/live/teacher/test_live/edit.ex:4084
 #, elixir-autogen, elixir-format
 msgid "The following words don't have images: %{words}. Please select words with images."
 msgstr ""
 
-#: lib/medoru_web/live/classroom_live/test_results.ex:360
+#: lib/medoru_web/live/classroom_live/test_results.ex:366
 #, elixir-autogen, elixir-format
 msgid "Time spent:"
 msgstr ""
@@ -9879,7 +9898,7 @@ msgid "Any reading (on'yomi or kun'yomi)"
 msgstr ""
 
 #: lib/medoru_web/live/teacher/classroom_live/new.ex:137
-#: lib/medoru_web/live/teacher/classroom_live/show.ex:1489
+#: lib/medoru_web/live/teacher/classroom_live/show.ex:1493
 #, elixir-autogen, elixir-format
 msgid "Anyone can find and join this classroom without an invite code."
 msgstr ""
@@ -9896,7 +9915,7 @@ msgstr ""
 msgid "Are you sure you want to delete this game?"
 msgstr ""
 
-#: lib/medoru_web/live/teacher/classroom_live/show.ex:1568
+#: lib/medoru_web/live/teacher/classroom_live/show.ex:1572
 #, elixir-autogen, elixir-format
 msgid "Auto-approve"
 msgstr ""
@@ -10747,7 +10766,7 @@ msgid "Lives Used"
 msgstr ""
 
 #: lib/medoru_web/live/teacher/classroom_live/new.ex:132
-#: lib/medoru_web/live/teacher/classroom_live/show.ex:1484
+#: lib/medoru_web/live/teacher/classroom_live/show.ex:1488
 #, elixir-autogen, elixir-format
 msgid "Make classroom public"
 msgstr ""
@@ -10823,7 +10842,7 @@ msgstr ""
 msgid "Medium-Fast"
 msgstr ""
 
-#: lib/medoru_web/live/teacher/classroom_live/show.ex:1563
+#: lib/medoru_web/live/teacher/classroom_live/show.ex:1567
 #, elixir-autogen, elixir-format
 msgid "Member Approval"
 msgstr ""
@@ -10965,7 +10984,7 @@ msgid "On-Screen Keyboard"
 msgstr ""
 
 #: lib/medoru_web/live/teacher/classroom_live/new.ex:139
-#: lib/medoru_web/live/teacher/classroom_live/show.ex:1491
+#: lib/medoru_web/live/teacher/classroom_live/show.ex:1495
 #, elixir-autogen, elixir-format
 msgid "Only students with the invite code can join this classroom."
 msgstr ""
@@ -11085,7 +11104,7 @@ msgstr ""
 msgid "Press Esc to exit"
 msgstr ""
 
-#: lib/medoru_web/live/teacher/classroom_live/show.ex:1579
+#: lib/medoru_web/live/teacher/classroom_live/show.ex:1583
 #, elixir-autogen, elixir-format
 msgid "Private"
 msgstr ""
@@ -11097,7 +11116,7 @@ msgstr ""
 
 #: lib/medoru_web/live/classroom_live/index.ex:257
 #: lib/medoru_web/live/classroom_live/index.ex:538
-#: lib/medoru_web/live/teacher/classroom_live/show.ex:1577
+#: lib/medoru_web/live/teacher/classroom_live/show.ex:1581
 #: lib/medoru_web/live/user_white_board_live.ex:208
 #: lib/medoru_web/live/user_white_board_live.ex:387
 #, elixir-autogen, elixir-format
@@ -11136,7 +11155,7 @@ msgid "Require reading input to collect cards"
 msgstr ""
 
 #: lib/medoru_web/live/teacher/classroom_live/new.ex:116
-#: lib/medoru_web/live/teacher/classroom_live/show.ex:1461
+#: lib/medoru_web/live/teacher/classroom_live/show.ex:1465
 #, elixir-autogen, elixir-format
 msgid "Require teacher approval for new members"
 msgstr ""
@@ -11357,13 +11376,13 @@ msgid "Students must type the romaji reading after finding a matching pair."
 msgstr ""
 
 #: lib/medoru_web/live/teacher/classroom_live/new.ex:121
-#: lib/medoru_web/live/teacher/classroom_live/show.ex:1466
+#: lib/medoru_web/live/teacher/classroom_live/show.ex:1470
 #, elixir-autogen, elixir-format
 msgid "Students will apply and wait for your approval before joining."
 msgstr ""
 
 #: lib/medoru_web/live/teacher/classroom_live/new.ex:123
-#: lib/medoru_web/live/teacher/classroom_live/show.ex:1468
+#: lib/medoru_web/live/teacher/classroom_live/show.ex:1472
 #, elixir-autogen, elixir-format
 msgid "Students will be added immediately without approval."
 msgstr ""
@@ -11373,7 +11392,7 @@ msgstr ""
 msgid "Teacher Dashboard"
 msgstr ""
 
-#: lib/medoru_web/live/teacher/classroom_live/show.ex:1566
+#: lib/medoru_web/live/teacher/classroom_live/show.ex:1570
 #, elixir-autogen, elixir-format
 msgid "Teacher approval required"
 msgstr ""
@@ -11474,7 +11493,7 @@ msgstr ""
 msgid "Very Slow"
 msgstr ""
 
-#: lib/medoru_web/live/teacher/classroom_live/show.ex:1574
+#: lib/medoru_web/live/teacher/classroom_live/show.ex:1578
 #, elixir-autogen, elixir-format
 msgid "Visibility"
 msgstr ""
@@ -12278,7 +12297,7 @@ msgid "Presentation Mode"
 msgstr ""
 
 #: lib/medoru_web/live/classroom_live/custom_lesson.ex:179
-#: lib/medoru_web/live/teacher/classroom_live/show.ex:1304
+#: lib/medoru_web/live/teacher/classroom_live/show.ex:1306
 #: lib/medoru_web/live/teacher/custom_lesson_live/edit.ex:538
 #: lib/medoru_web/live/teacher/grammar_lesson_live/form/form_template.html.heex:18
 #, elixir-autogen, elixir-format
@@ -12427,7 +12446,7 @@ msgid "System"
 msgstr ""
 
 #: lib/medoru_web/live/settings_live/profile/profile.html.heex:116
-#: lib/medoru_web/live/teacher/classroom_live/show.ex:1585
+#: lib/medoru_web/live/teacher/classroom_live/show.ex:1589
 #: lib/medoru_web/live/word_book_live/design.ex:248
 #, elixir-autogen, elixir-format
 msgid "Theme"
@@ -12723,7 +12742,7 @@ msgstr ""
 msgid "Age"
 msgstr ""
 
-#: lib/medoru_web/live/teacher/classroom_live/show.ex:1694
+#: lib/medoru_web/live/teacher/classroom_live/show.ex:1698
 #, elixir-autogen, elixir-format
 msgid "All approved members can participate in the classroom chat. Messages are visible to everyone in the classroom."
 msgstr ""
@@ -12952,12 +12971,12 @@ msgstr ""
 msgid "Chat"
 msgstr ""
 
-#: lib/medoru_web/live/teacher/classroom_live/show.ex:1765
+#: lib/medoru_web/live/teacher/classroom_live/show.ex:1769
 #, elixir-autogen, elixir-format
 msgid "Chat Not Available"
 msgstr ""
 
-#: lib/medoru_web/live/teacher/classroom_live/show.ex:1707
+#: lib/medoru_web/live/teacher/classroom_live/show.ex:1711
 #, elixir-autogen, elixir-format
 msgid "Chat Participants"
 msgstr ""
@@ -13006,7 +13025,7 @@ msgstr ""
 msgid "City, Country"
 msgstr ""
 
-#: lib/medoru_web/live/teacher/classroom_live/show.ex:1684
+#: lib/medoru_web/live/teacher/classroom_live/show.ex:1688
 #, elixir-autogen, elixir-format
 msgid "Classroom Chat"
 msgstr ""
@@ -13851,7 +13870,7 @@ msgstr ""
 msgid "Leave this group conversation?"
 msgstr ""
 
-#: lib/medoru_web/live/teacher/classroom_live/show.ex:1749
+#: lib/medoru_web/live/teacher/classroom_live/show.ex:1753
 #, elixir-autogen, elixir-format
 msgid "Left"
 msgstr ""
@@ -14221,7 +14240,7 @@ msgstr ""
 
 #: lib/medoru_web/live/notifications_live/notifications_live.html.heex:195
 #: lib/medoru_web/live/notifications_live/notifications_live.html.heex:206
-#: lib/medoru_web/live/teacher/classroom_live/show.ex:1690
+#: lib/medoru_web/live/teacher/classroom_live/show.ex:1694
 #, elixir-autogen, elixir-format
 msgid "Open Chat"
 msgstr ""
@@ -14676,7 +14695,7 @@ msgstr ""
 msgid "Test restored to published."
 msgstr ""
 
-#: lib/medoru_web/live/teacher/classroom_live/show.ex:1768
+#: lib/medoru_web/live/teacher/classroom_live/show.ex:1772
 #, elixir-autogen, elixir-format
 msgid "The classroom chat could not be found. It should be created automatically when the classroom is created."
 msgstr ""
@@ -15197,7 +15216,7 @@ msgstr ""
 msgid "online"
 msgstr ""
 
-#: lib/medoru_web/live/teacher/classroom_live/show.ex:1700
+#: lib/medoru_web/live/teacher/classroom_live/show.ex:1704
 #, elixir-autogen, elixir-format
 msgid "participants"
 msgstr ""
@@ -15550,12 +15569,12 @@ msgstr ""
 msgid "Build a sentence following the example"
 msgstr ""
 
-#: lib/medoru_web/live/teacher/classroom_live/show.ex:1528
+#: lib/medoru_web/live/teacher/classroom_live/show.ex:1532
 #, elixir-autogen, elixir-format
 msgid "Choose a visual theme for your classroom. Default uses the site colors."
 msgstr ""
 
-#: lib/medoru_web/live/teacher/classroom_live/show.ex:1497
+#: lib/medoru_web/live/teacher/classroom_live/show.ex:1501
 #, elixir-autogen, elixir-format
 msgid "Classroom Theme"
 msgstr ""
@@ -15604,13 +15623,13 @@ msgid "Create from Image"
 msgstr ""
 
 #: lib/medoru_web/live/messages_live/settings.html.heex:35
-#: lib/medoru_web/live/teacher/classroom_live/show.ex:1510
+#: lib/medoru_web/live/teacher/classroom_live/show.ex:1514
 #: lib/medoru_web/live/word_book_live/design.ex:260
 #, elixir-autogen, elixir-format
 msgid "Default"
 msgstr ""
 
-#: lib/medoru_web/live/teacher/classroom_live/show.ex:1590
+#: lib/medoru_web/live/teacher/classroom_live/show.ex:1594
 #, elixir-autogen, elixir-format
 msgid "Default (site theme)"
 msgstr ""
@@ -17046,7 +17065,7 @@ msgstr ""
 msgid "Reading %{reading} (general kanji reading — no specific word reading set)"
 msgstr ""
 
-#: lib/medoru_web/live/classroom_live/test_results.ex:280
+#: lib/medoru_web/live/classroom_live/test_results.ex:286
 #: lib/medoru_web/live/lesson_test_live/writing_component.ex:219
 #, elixir-autogen, elixir-format
 msgid "Write the kanji in the word %{word_reading} (%{word_meaning})"
@@ -18074,7 +18093,7 @@ msgstr ""
 msgid "Post to White Board"
 msgstr ""
 
-#: lib/medoru_web/live/teacher/test_live/edit.ex:4181
+#: lib/medoru_web/live/teacher/test_live/edit.ex:4201
 #, elixir-autogen, elixir-format
 msgid "%{count} student attempt(s) have been reset."
 msgstr ""
@@ -19016,7 +19035,7 @@ msgstr ""
 msgid "Anonymous name"
 msgstr ""
 
-#: lib/medoru_web/live/classroom_live/test_results.ex:576
+#: lib/medoru_web/live/classroom_live/test_results.ex:598
 #, elixir-autogen, elixir-format
 msgid "Answer"
 msgstr ""
@@ -19126,7 +19145,7 @@ msgstr ""
 msgid "Deleted %{count} words."
 msgstr ""
 
-#: lib/medoru_web/live/classroom_live/test_results.ex:504
+#: lib/medoru_web/live/classroom_live/test_results.ex:522
 #, elixir-autogen, elixir-format
 msgid "Download image"
 msgstr ""
@@ -19151,7 +19170,7 @@ msgstr ""
 msgid "Each cycle, a wrong stroke costs one more life."
 msgstr ""
 
-#: lib/medoru_web/live/classroom_live/test_results.ex:152
+#: lib/medoru_web/live/classroom_live/test_results.ex:154
 #: lib/medoru_web/live/teacher/test_live/edit.ex:3594
 #: lib/medoru_web/live/teacher/test_live/grammar_step_form.ex:746
 #, elixir-autogen, elixir-format
@@ -19164,7 +19183,7 @@ msgstr ""
 msgid "Expected Answer Reading (kana only)"
 msgstr ""
 
-#: lib/medoru_web/live/classroom_live/test_results.ex:151
+#: lib/medoru_web/live/classroom_live/test_results.ex:153
 #: lib/medoru_web/live/teacher/test_live/edit.ex:3579
 #: lib/medoru_web/live/teacher/test_live/grammar_step_form.ex:732
 #, elixir-autogen, elixir-format
@@ -19394,12 +19413,12 @@ msgstr ""
 msgid "Practice Classroom"
 msgstr ""
 
-#: lib/medoru_web/live/classroom_live/test_results.ex:493
+#: lib/medoru_web/live/classroom_live/test_results.ex:511
 #, elixir-autogen, elixir-format
 msgid "Preview export"
 msgstr ""
 
-#: lib/medoru_web/live/classroom_live/test_results.ex:508
+#: lib/medoru_web/live/classroom_live/test_results.ex:526
 #, elixir-autogen, elixir-format
 msgid "Print / Save as PDF"
 msgstr ""
@@ -19654,12 +19673,12 @@ msgid_plural "You know %{count} kanji. You need at least 50 learned kanji to ent
 msgstr[0] ""
 msgstr[1] ""
 
-#: lib/medoru_web/live/classroom_live/test_results.ex:146
+#: lib/medoru_web/live/classroom_live/test_results.ex:148
 #, elixir-autogen, elixir-format
 msgid "Your Answer"
 msgstr ""
 
-#: lib/medoru_web/live/classroom_live/test_results.ex:145
+#: lib/medoru_web/live/classroom_live/test_results.ex:147
 #, elixir-autogen, elixir-format
 msgid "Your Question"
 msgstr ""
@@ -19731,8 +19750,103 @@ msgstr ""
 
 #: lib/medoru_web/live/classroom_live/custom_lesson_test.ex:1047
 #: lib/medoru_web/live/classroom_live/grammar_components.ex:419
-#: lib/medoru_web/live/classroom_live/test_results.ex:536
+#: lib/medoru_web/live/classroom_live/test_results.ex:556
 #: lib/medoru_web/live/lesson_test_live/show.ex:968
 #, elixir-autogen, elixir-format
 msgid "例"
+msgstr ""
+
+#: lib/medoru_web/live/teacher/test_live/new.ex:213
+#, elixir-autogen, elixir-format
+msgid "1 attempt"
+msgstr ""
+
+#: lib/medoru_web/live/teacher/test_live/new.ex:205
+#, elixir-autogen, elixir-format
+msgid "1 hour"
+msgstr ""
+
+#: lib/medoru_web/live/teacher/test_live/new.ex:198
+#, elixir-autogen, elixir-format
+msgid "1 minute"
+msgstr ""
+
+#: lib/medoru_web/live/teacher/test_live/new.ex:206
+#, elixir-autogen, elixir-format
+msgid "1.5 hours"
+msgstr ""
+
+#: lib/medoru_web/live/teacher/test_live/new.ex:217
+#, elixir-autogen, elixir-format
+msgid "10 attempts"
+msgstr ""
+
+#: lib/medoru_web/live/teacher/test_live/new.ex:200
+#, elixir-autogen, elixir-format
+msgid "10 minutes"
+msgstr ""
+
+#: lib/medoru_web/live/teacher/test_live/new.ex:201
+#, elixir-autogen, elixir-format
+msgid "15 minutes"
+msgstr ""
+
+#: lib/medoru_web/live/teacher/test_live/new.ex:214
+#, elixir-autogen, elixir-format
+msgid "2 attempts"
+msgstr ""
+
+#: lib/medoru_web/live/teacher/test_live/new.ex:207
+#, elixir-autogen, elixir-format
+msgid "2 hours"
+msgstr ""
+
+#: lib/medoru_web/live/teacher/test_live/new.ex:202
+#, elixir-autogen, elixir-format
+msgid "20 minutes"
+msgstr ""
+
+#: lib/medoru_web/live/teacher/test_live/new.ex:215
+#, elixir-autogen, elixir-format
+msgid "3 attempts"
+msgstr ""
+
+#: lib/medoru_web/live/teacher/test_live/new.ex:203
+#, elixir-autogen, elixir-format
+msgid "30 minutes"
+msgstr ""
+
+#: lib/medoru_web/live/teacher/test_live/new.ex:204
+#, elixir-autogen, elixir-format
+msgid "45 minutes"
+msgstr ""
+
+#: lib/medoru_web/live/teacher/test_live/new.ex:216
+#, elixir-autogen, elixir-format
+msgid "5 attempts"
+msgstr ""
+
+#: lib/medoru_web/live/teacher/test_live/new.ex:199
+#, elixir-autogen, elixir-format
+msgid "5 minutes"
+msgstr ""
+
+#: lib/medoru_web/live/teacher/classroom_live/show.ex:1857
+#, elixir-autogen, elixir-format
+msgid "Applied"
+msgstr ""
+
+#: lib/medoru_web/live/teacher/test_live/show.ex:421
+#, elixir-autogen, elixir-format
+msgid "Archive Test"
+msgstr ""
+
+#: lib/medoru_web/live/teacher/test_live/show.ex:233
+#, elixir-autogen, elixir-format
+msgid "Edit Test"
+msgstr ""
+
+#: lib/medoru_web/live/classroom_live/test_results.ex:507
+#, elixir-autogen, elixir-format
+msgid "Show correct/incorrect marks"
 msgstr ""

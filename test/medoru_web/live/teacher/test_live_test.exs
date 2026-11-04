@@ -305,6 +305,12 @@ defmodule MedoruWeb.Teacher.TestLiveTest do
         }
       }
 
+      # Simulate real typing: phx-change fires before submit, accumulating
+      # question_data changes (including examples_text) in the changeset.
+      view
+      |> form("#step-form", %{"step" => attrs})
+      |> render_change()
+
       view
       |> form("#step-form", %{"step" => attrs})
       |> render_submit()
@@ -325,6 +331,58 @@ defmodule MedoruWeb.Teacher.TestLiveTest do
       assert step.question_data["examples"] == [
                "この 公園で サッカー（はい）\nこの公園でサッカーができますか。\n……はい、できます。"
              ]
+    end
+
+    test "editing a make_question_answer step with stored examples list saves the edits", %{
+      conn: conn,
+      teacher: teacher
+    } do
+      test = teacher_test_fixture(teacher.id)
+
+      step =
+        test_step_fixture(test, %{
+          question: "Make a question in the pattern and answer it",
+          step_type: :grammar,
+          question_type: :grammar_make_question_answer,
+          correct_answer: "N/A",
+          options: [],
+          points: 10,
+          question_data: %{
+            "requirement" => "家の 部屋で 料理（いいえ）",
+            "expected_question" => "家の部屋で料理ができますか。",
+            "expected_answer" => "いいえ、できません。",
+            "expected_question_reading" => "いえのへやでりょうりができますか",
+            "expected_answer_reading" => "いいえできません",
+            "examples" => ["この 公園で サッカー（はい）\nこの公園でサッカーができますか。\n……はい、できます。"]
+          }
+        })
+
+      {:ok, view, _html} =
+        conn |> log_in_user(teacher) |> live(~p"/teacher/tests/#{test.id}/edit")
+
+      view |> element("button[phx-click='edit_step'][phx-value-step-id='#{step.id}']") |> render_click()
+      assert render(view) =~ "Requirement"
+
+      attrs = %{
+        "question" => "Make a question in the pattern and answer it",
+        "question_data" => %{
+          "requirement" => "寮の 部屋で 料理（いいえ）",
+          "expected_question" => "寮の部屋で料理ができますか。",
+          "expected_answer" => "いいえ、できません。",
+          "expected_question_reading" => "りょうのへやでりょうりができますか",
+          "expected_answer_reading" => "いいえできません"
+        }
+      }
+
+      view
+      |> form("#step-form", %{"step" => attrs})
+      |> render_submit()
+
+      assert render(view) =~ "Step updated successfully."
+
+      updated = Tests.get_test_step(step.id)
+      assert updated.question_data["requirement"] == "寮の 部屋で 料理（いいえ）"
+      assert updated.question_data["expected_question_reading"] == "りょうのへやでりょうりができますか"
     end
   end
 end

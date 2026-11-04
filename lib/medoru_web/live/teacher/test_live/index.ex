@@ -291,7 +291,7 @@ defmodule MedoruWeb.Teacher.TestLive.Index do
       <%= if @filter == "all" or @filter == "in_progress" do %>
         <.link navigate={~p"/teacher/tests/new"} class="w-full sm:w-auto">
           <button class="btn btn-primary w-full sm:w-auto">
-            <.icon name="hero-plus" class="w-4 h-4 mr-2" /> Create Test
+            <.icon name="hero-plus" class="w-4 h-4 mr-2" /> {gettext("Create Test")}
           </button>
         </.link>
       <% end %>

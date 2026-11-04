@@ -21,6 +21,17 @@ defmodule Medoru.Grammar.ReadingConverterTest do
       assert ReadingConverter.normalize_for_comparison("料理ができますか。") == "りょうりができますか"
     end
 
+    test "on'yomi compounds use the word reading, not per-kanji kun guesses" do
+      word_fixture(%{text: "空港", reading: "くうこう", word_type: :noun})
+      word_fixture(%{text: "行く", reading: "いく", word_type: :verb})
+      word_fixture(%{text: "ホテル", reading: "ほてる", word_type: :noun})
+
+      student = "ホテルからバスで空港へ行くことができますか。"
+
+      assert ReadingConverter.normalize_for_comparison(student) ==
+               ReadingConverter.normalize_for_comparison("ホテルからバスでくうこうへいくことができますか")
+    end
+
     test "drops punctuation" do
       assert ReadingConverter.to_kana("これは、ペンです。") == "これはペンです"
     end
@@ -57,6 +68,14 @@ defmodule Medoru.Grammar.ReadingConverterTest do
     test "strips Japanese and ASCII punctuation and whitespace" do
       assert ReadingConverter.normalize_for_comparison("あ、い う。え!お?か,き.く・け") ==
                "あいうえおかきくけ"
+    end
+
+    test "unifies katakana and hiragana so both scripts compare equal" do
+      assert ReadingConverter.normalize_for_comparison("ホテル") ==
+               ReadingConverter.normalize_for_comparison("ほてる")
+
+      assert ReadingConverter.normalize_for_comparison("インターネットでホテルのよやくができますか") ==
+               ReadingConverter.normalize_for_comparison("インターネットでほてるのよやくができますか。")
     end
   end
 end
