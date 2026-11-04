@@ -3,7 +3,8 @@ import { ALL_ACTIONS, getActionTypeColor, getAbilityRarityColor, getMaxOverallAb
 import { ITEMS } from '../data/items.js'
 import { getCharmById } from '../data/charms.js'
 import { rollEnemyDrops } from '../data/enemies/index.js'
-import { getRewardPool, pickRewardAbilities } from '../data/abilityRewards.js'
+import { getRewardPool, pickRewardAbilities, pickUpgradeOffers, ABILITY_KNOWN_THRESHOLD } from '../data/abilityRewards.js'
+import { apply } from '../systems/UpgradeEngine.js'
 import WinChallengeSystem from '../systems/WinChallengeSystem.js'
 import { getKnowledgeEffects } from '../systems/UpgradeGenerator.js'
 import AbilityTooltip from '../ui/AbilityTooltip.js'
@@ -66,9 +67,15 @@ export default class WinScene extends Phaser.Scene {
   // ---------- Reward generation ----------
 
   generateAbilityRewards() {
-    const pool = getRewardPool(this.player)
     const count = this.player.applyNgPlusMultiplier(3 + (Math.random() * 100 < (this.player.getStatValue('luck') || 0) ? 1 : 0))
-    return pickRewardAbilities(pool, Math.min(count, 6), this.player.loadout.knownActionIds || [], this.tile)
+    const n = Math.min(count, 6)
+    // Build-deepening phase: at ABILITY_KNOWN_THRESHOLD+ known abilities, wins
+    // offer upgrade cards (all types) instead of new abilities. Ability mode
+    // returns string ids; upgrade mode returns card objects.
+    this.rewardMode = ((this.player.loadout.knownActionIds || []).length >= ABILITY_KNOWN_THRESHOLD) ? 'upgrades' : 'abilities'
+    if (this.rewardMode === 'upgrades') return pickUpgradeOffers(this.player, n)
+    const pool = getRewardPool(this.player)
+    return pickRewardAbilities(pool, n, this.player.loadout.knownActionIds || [], this.tile)
   }
 
   applyDrops() {
@@ -159,9 +166,13 @@ export default class WinScene extends Phaser.Scene {
       return
     }
 
-    const headerText = this.bonusAbilityPending
-      ? 'Choose an ability reward — you get a second matching ability!'
-      : 'Choose an ability reward:'
+    const headerText = this.rewardMode === 'upgrades'
+      ? (this.bonusAbilityPending
+        ? 'Choose an upgrade reward — you get a second one free!'
+        : 'Choose an upgrade reward:')
+      : (this.bonusAbilityPending
+        ? 'Choose an ability reward — you get a second matching ability!'
+        : 'Choose an ability reward:')
     this.abilityRewardsContainer.add(this.add.text(GAME_CONFIG.width / 2, startY, headerText, {
       ...FONTS.default,
       fontSize: '16px',
@@ -169,7 +180,8 @@ export default class WinScene extends Phaser.Scene {
     }).setOrigin(0.5))
 
     if (this.rewardAbilities.length === 0) {
-      this.abilityRewardsContainer.add(this.add.text(GAME_CONFIG.width / 2, startY + 40, 'No new abilities to learn.', {
+      this.abilityRewardsContainer.add(this.add.text(GAME_CONFIG.width / 2, startY + 40,
+        this.rewardMode === 'upgrades' ? 'No applicable upgrades right now.' : 'No new abilities to learn.', {
         ...FONTS.default,
         fontSize: '14px',
         color: '#7f8c8d',
@@ -183,31 +195,91 @@ export default class WinScene extends Phaser.Scene {
     const totalW = this.rewardAbilities.length * cardW + (this.rewardAbilities.length - 1) * gap
     const startX = (GAME_CONFIG.width - totalW) / 2 + cardW / 2
 
-    this.rewardAbilities.forEach((actionId, i) => {
-      const action = ALL_ACTIONS.find(a => a.id === actionId)
-      if (!action) return
+    this.rewardAbilities.forEach((entry, i) => {
       const x = startX + i * (cardW + gap)
       const y = startY + 60
-      const card = this.createAbilityCard(x, y, cardW, cardH, action)
-      this.abilityTooltip.attach(card.hitArea, action)
-      card.hitArea.on('pointerup', (pointer) => {
-        const moveDist = Math.hypot(pointer.x - pointer.downX, pointer.y - pointer.downY)
-        if (card.hitArea.getData('abilityTooltipSuppressClick')) {
-          card.hitArea.setData('abilityTooltipSuppressClick', false)
-          return
-        }
-        if (moveDist < 8) this.onAbilitySelected(action)
-      })
-      this.abilityRewardsContainer.add(card.container)
+      if (this.rewardMode === 'upgrades') {
+        const card = this.createUpgradeOfferCard(x, y, cardW, cardH, entry)
+        card.hitArea.on('pointerup', (pointer) => {
+          const moveDist = Math.hypot(pointer.x - pointer.downX, pointer.y - pointer.downY)
+          if (moveDist < 8) this.onUpgradeOfferSelected(entry)
+        })
+        this.abilityRewardsContainer.add(card.container)
+      } else {
+        const action = ALL_ACTIONS.find(a => a.id === entry)
+        if (!action) return
+        const card = this.createAbilityCard(x, y, cardW, cardH, action)
+        this.abilityTooltip.attach(card.hitArea, action)
+        card.hitArea.on('pointerup', (pointer) => {
+          const moveDist = Math.hypot(pointer.x - pointer.downX, pointer.y - pointer.downY)
+          if (card.hitArea.getData('abilityTooltipSuppressClick')) {
+            card.hitArea.setData('abilityTooltipSuppressClick', false)
+            return
+          }
+          if (moveDist < 8) this.onAbilitySelected(action)
+        })
+        this.abilityRewardsContainer.add(card.container)
+      }
     })
+  }
+
+  // Compact upgrade card used when wins offer upgrade rewards (7+ abilities known).
+  createUpgradeOfferCard(x, y, w, h, card) {
+    const container = this.add.container(x, y)
+    const RARITY_COLORS = { common: 0x7f8c8d, uncommon: 0x2ecc71, rare: 0x3498db, epic: 0x9b59b6 }
+    const border = RARITY_COLORS[card.rarity] || 0x7f8c8d
+
+    const bg = this.add.graphics()
+    bg.fillStyle(0x16213e, 0.95)
+    bg.fillRoundedRect(-w / 2, -h / 2, w, h, 10)
+    bg.lineStyle(2, border, 0.9)
+    bg.strokeRoundedRect(-w / 2, -h / 2, w, h, 10)
+    container.add(bg)
+
+    container.add(this.add.text(0, -h / 2 + 14, (card.rarity || 'common').toUpperCase(), {
+      ...FONTS.default,
+      fontSize: '9px',
+      color: '#' + border.toString(16).padStart(6, '0'),
+    }).setOrigin(0.5))
+
+    container.add(this.add.text(0, -8, card.name, {
+      ...FONTS.default,
+      fontSize: '12px',
+      color: '#ecf0f1',
+      wordWrap: { width: w - 12 },
+      align: 'center',
+    }).setOrigin(0.5))
+
+    container.add(this.add.text(0, 14, card.description, {
+      ...FONTS.default,
+      fontSize: '9px',
+      color: '#95a5a6',
+      wordWrap: { width: w - 12 },
+      align: 'center',
+    }).setOrigin(0.5))
+
+    container.add(this.add.text(0, 34, 'Click to take', {
+      ...FONTS.default,
+      fontSize: '10px',
+      color: '#2ecc71',
+    }).setOrigin(0.5))
+
+    const hitArea = this.add.rectangle(0, 0, w, h, 0x000000, 0).setInteractive({ useHandCursor: true })
+    container.add(hitArea)
+
+    return { container, bg, hitArea }
   }
 
   refreshAbilityRewards() {
     // Re-roll reward picks from the remaining unknown pool so the same
     // learned ability doesn't keep showing up.
-    const pool = getRewardPool(this.player)
     const count = this.rewardAbilities.length
-    this.rewardAbilities = pickRewardAbilities(pool, count, this.player.loadout.knownActionIds || [], this.tile)
+    if (this.rewardMode === 'upgrades') {
+      this.rewardAbilities = pickUpgradeOffers(this.player, count)
+    } else {
+      const pool = getRewardPool(this.player)
+      this.rewardAbilities = pickRewardAbilities(pool, count, this.player.loadout.knownActionIds || [], this.tile)
+    }
     this.createAbilityRewards()
   }
 
@@ -343,6 +415,26 @@ export default class WinScene extends Phaser.Scene {
   }
 
   // ---------- Interactions ----------
+
+  onUpgradeOfferSelected(card) {
+    if (this.abilitySelected) return
+    const result = apply(this.player, card.id)
+    if (!result.ok) {
+      this.showToast(result.reason || 'Cannot take this upgrade.')
+      return
+    }
+    let statusName = card.name
+    // Gamble bonus in upgrade mode: a second upgrade of the same rarity, if any.
+    if (this.bonusAbilityPending) {
+      const bonus = pickUpgradeOffers(this.player, 1)[0]
+      if (bonus && bonus.rarity === card.rarity) {
+        const bres = apply(this.player, bonus.id)
+        if (bres.ok) statusName = `${card.name} + ${bonus.name}`
+      }
+    }
+    this.showToast(`${card.name} acquired!`)
+    this.markAbilitySelected(statusName)
+  }
 
   onAbilitySelected(action) {
     if (this.abilitySelected) return
@@ -630,7 +722,9 @@ export default class WinScene extends Phaser.Scene {
       let status = result.success ? 'Won!' : 'Lost...'
       const color = result.success ? '#2ecc71' : '#e74c3c'
 
-      // 25% chance to win a second ability reward if both challenges passed.
+      // 25% chance to win a second reward if both challenges passed. In
+      // upgrade mode the bonus is a second upgrade; in ability mode a second
+      // matching ability.
       if (result.success && Math.random() < 0.25) {
         if (this.abilitySelected && this.selectedAbilityAction) {
           const bonusName = this.grantBonusAbility(this.selectedAbilityAction.type)

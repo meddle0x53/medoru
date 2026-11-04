@@ -69,7 +69,11 @@ export function apply(player, upgradeId) {
       if (!stat || player.baseStats?.[stat] === undefined) {
         return { ok: false, reason: 'Unknown stat.' }
       }
-      player.baseStats[stat] += 1
+      // Front-loaded curve: the first 3 stacks grant +5, stacks 4–7 grant +4,
+      // stacks 8–10 grant +3. Early picks matter most.
+      const owned = countUpgrade(player, card.id)
+      const gain = owned < 3 ? 5 : owned < 7 ? 4 : 3
+      player.baseStats[stat] += gain
       player[stat] = player.baseStats[stat]
       if (stat === 'vitality') player.recalcMaxHp()
       if (stat === 'stamina') player.recalcMaxStamina()

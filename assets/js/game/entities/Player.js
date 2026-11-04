@@ -299,12 +299,10 @@ export default class Player extends Character {
 
     // Active / inactive action management
     this.activeActionIds = this.loadout.activeActionIds
-    const { active, inactive } = splitActions(this)
-    this.activeActions = active
-    this.inactiveActions = inactive
-    // Keep equippedSkills in sync for Character base class compatibility
-    this.equippedSkills = this.activeActions
-    this.maxActiveSlots = getMaxActiveActions(this.getEffectiveCapacity())
+    this.refreshActions()
+    if ((this.loadout.activeSlotBonus || 0) > 0) {
+      console.log(`[Player] constructed with activeSlotBonus=${this.loadout.activeSlotBonus}, maxActiveSlots=${this.maxActiveSlots}, runUpgrades=${(this.loadout.runUpgrades || []).map(u => u.upgradeId || u.id).join(',')}`)
+    }
 
     // Tag ledger for this turn's combo sequencing
     this.turnTagLedger = []
@@ -1544,6 +1542,40 @@ export default class Player extends Character {
     }
     this.refreshActions()
     this.saveLoadout()
+  }
+
+  /**
+   * Permanently forget an ability for this run: removes it from the known /
+   * selected / active lists and purges every run upgrade bound to it
+   * (modifiers, kanji attunements, and its unlock card so it can reappear in
+   * rewards). Kanji tier progress for the ability is cleared too.
+   * Returns { ok, removedUpgrades } or { ok: false, reason }.
+   */
+  forgetAbility(actionId) {
+    if (actionId === 'use_item') return { ok: false, reason: 'Use Item cannot be forgotten.' }
+    if (!this.hasAbility(actionId)) return { ok: false, reason: 'Ability not known.' }
+
+    const action = ALL_ACTIONS.find(a => a.id === actionId)
+    // Guard: forgetting must never leave the player without an attack.
+    const remaining = (this.loadout.knownActionIds || []).filter(id => id !== actionId)
+    const hasOtherAttack = remaining.some(id => ALL_ACTIONS.find(a => a.id === id)?.type === 'attack')
+    if (action?.type === 'attack' && !hasOtherAttack) {
+      return { ok: false, reason: 'You must know at least one attack ability.' }
+    }
+
+    const before = (this.loadout.runUpgrades || []).length
+    this.loadout.runUpgrades = (this.loadout.runUpgrades || [])
+      .filter(u => u.effect?.abilityId !== actionId && !(u.type === 'unlock_ability' && u.effect?.abilityId === actionId))
+    const removedUpgrades = before - this.loadout.runUpgrades.length
+
+    this.loadout.knownActionIds = remaining
+    this.loadout.selectedActionIds = (this.loadout.selectedActionIds || []).filter(id => id !== actionId)
+    this.loadout.activeActionIds = (this.loadout.activeActionIds || []).filter(id => id !== actionId)
+    if (this.loadout.kanjiTiers) delete this.loadout.kanjiTiers[actionId]
+
+    this.refreshActions()
+    this.saveLoadout()
+    return { ok: true, removedUpgrades, action }
   }
 
   // ---------- Map / Rogue-like State ----------

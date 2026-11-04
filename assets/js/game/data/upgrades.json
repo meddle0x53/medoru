@@ -5,73 +5,104 @@
       "id": "might",
       "name": "Might",
       "nameJa": "怪力",
-      "description": "+1 Strength for this run.",
+      "description": "You feel more powerful. Strength surges for this run (strongest early).",
       "rarity": "common",
       "family": "stat",
-      "tags": ["stat", "strength", "physical"],
+      "tags": [
+        "stat",
+        "strength",
+        "physical"
+      ],
       "type": "stat",
       "maxStacks": 10,
-      "effect": { "stat": "strength" }
+      "effect": {
+        "stat": "strength"
+      }
     },
     {
       "id": "life",
       "name": "Life",
       "nameJa": "活力",
-      "description": "+1 Vitality for this run.",
+      "description": "You feel tougher. Your vitality deepens for this run (strongest early).",
       "rarity": "common",
       "family": "stat",
-      "tags": ["stat", "vitality"],
+      "tags": [
+        "stat",
+        "vitality"
+      ],
       "type": "stat",
       "maxStacks": 10,
-      "effect": { "stat": "vitality" }
+      "effect": {
+        "stat": "vitality"
+      }
     },
     {
       "id": "insight",
       "name": "Insight",
       "nameJa": "慧眼",
-      "description": "+1 Luck for this run.",
+      "description": "You feel luckier. Fortune favors you this run (strongest early).",
       "rarity": "common",
       "family": "stat",
-      "tags": ["stat", "luck"],
+      "tags": [
+        "stat",
+        "luck"
+      ],
       "type": "stat",
       "maxStacks": 10,
-      "effect": { "stat": "luck" }
+      "effect": {
+        "stat": "luck"
+      }
     },
     {
       "id": "finesse",
       "name": "Finesse",
       "nameJa": "妙技",
-      "description": "+1 Skill for this run.",
+      "description": "You feel deadlier. Your technique sharpens for this run (strongest early).",
       "rarity": "common",
       "family": "stat",
-      "tags": ["stat", "skill"],
+      "tags": [
+        "stat",
+        "skill"
+      ],
       "type": "stat",
       "maxStacks": 10,
-      "effect": { "stat": "skill" }
+      "effect": {
+        "stat": "skill"
+      }
     },
     {
       "id": "endurance",
       "name": "Endurance",
       "nameJa": "忍耐",
-      "description": "+1 Stamina (stat) for this run.",
+      "description": "You endure better. Stamina hardens for this run (strongest early).",
       "rarity": "common",
       "family": "stat",
-      "tags": ["stat", "stamina"],
+      "tags": [
+        "stat",
+        "stamina"
+      ],
       "type": "stat",
       "maxStacks": 10,
-      "effect": { "stat": "stamina" }
+      "effect": {
+        "stat": "stamina"
+      }
     },
     {
       "id": "mind",
       "name": "Mind",
       "nameJa": "精神",
-      "description": "+1 Mana for this run.",
+      "description": "You feel smarter. Your mind expands for this run (strongest early).",
       "rarity": "common",
       "family": "stat",
-      "tags": ["stat", "mana"],
+      "tags": [
+        "stat",
+        "mana"
+      ],
       "type": "stat",
       "maxStacks": 10,
-      "effect": { "stat": "mana" }
+      "effect": {
+        "stat": "mana"
+      }
     },
     {
       "id": "stamina_1",
@@ -80,7 +111,9 @@
       "description": "+1 Energy (max stamina) for this run.",
       "rarity": "common",
       "family": "flat",
-      "tags": ["stamina"],
+      "tags": [
+        "stamina"
+      ],
       "type": "flat_stamina",
       "maxStacks": 1,
       "effect": {}
@@ -92,10 +125,14 @@
       "description": "+1 Energy (max stamina) for this run.",
       "rarity": "common",
       "family": "flat",
-      "tags": ["stamina"],
+      "tags": [
+        "stamina"
+      ],
       "type": "flat_stamina",
       "maxStacks": 1,
-      "prerequisites": ["stamina_1"],
+      "prerequisites": [
+        "stamina_1"
+      ],
       "effect": {}
     },
     {
@@ -105,10 +142,14 @@
       "description": "+1 Energy (max stamina) for this run.",
       "rarity": "uncommon",
       "family": "flat",
-      "tags": ["stamina"],
+      "tags": [
+        "stamina"
+      ],
       "type": "flat_stamina",
       "maxStacks": 1,
-      "prerequisites": ["stamina_2"],
+      "prerequisites": [
+        "stamina_2"
+      ],
       "effect": {}
     },
     {
@@ -118,10 +159,14 @@
       "description": "+1 Energy (max stamina) for this run.",
       "rarity": "rare",
       "family": "flat",
-      "tags": ["stamina"],
+      "tags": [
+        "stamina"
+      ],
       "type": "flat_stamina",
       "maxStacks": 1,
-      "prerequisites": ["stamina_3"],
+      "prerequisites": [
+        "stamina_3"
+      ],
       "effect": {}
     },
     {
@@ -131,10 +176,14 @@
       "description": "+1 Energy (max stamina) for this run.",
       "rarity": "epic",
       "family": "flat",
-      "tags": ["stamina"],
+      "tags": [
+        "stamina"
+      ],
       "type": "flat_stamina",
       "maxStacks": 1,
-      "prerequisites": ["stamina_4"],
+      "prerequisites": [
+        "stamina_4"
+      ],
       "effect": {}
     },
     {
@@ -144,7 +193,10 @@
       "description": "+1 active ability slot for this run.",
       "rarity": "uncommon",
       "family": "flat",
-      "tags": ["capacity", "slots"],
+      "tags": [
+        "capacity",
+        "slots"
+      ],
       "type": "flat_active_slot",
       "maxStacks": 1,
       "effect": {}
@@ -156,10 +208,15 @@
       "description": "+1 active ability slot for this run.",
       "rarity": "rare",
       "family": "flat",
-      "tags": ["capacity", "slots"],
+      "tags": [
+        "capacity",
+        "slots"
+      ],
       "type": "flat_active_slot",
       "maxStacks": 1,
-      "prerequisites": ["capacity_1"],
+      "prerequisites": [
+        "capacity_1"
+      ],
       "effect": {}
     },
     {
@@ -169,10 +226,15 @@
       "description": "+1 active ability slot for this run.",
       "rarity": "rare",
       "family": "flat",
-      "tags": ["capacity", "slots"],
+      "tags": [
+        "capacity",
+        "slots"
+      ],
       "type": "flat_active_slot",
       "maxStacks": 1,
-      "prerequisites": ["capacity_2"],
+      "prerequisites": [
+        "capacity_2"
+      ],
       "effect": {}
     },
     {
@@ -182,10 +244,15 @@
       "description": "+1 active ability slot for this run.",
       "rarity": "epic",
       "family": "flat",
-      "tags": ["capacity", "slots"],
+      "tags": [
+        "capacity",
+        "slots"
+      ],
       "type": "flat_active_slot",
       "maxStacks": 1,
-      "prerequisites": ["capacity_3"],
+      "prerequisites": [
+        "capacity_3"
+      ],
       "effect": {}
     },
     {
@@ -195,11 +262,21 @@
       "description": "Your sword fights like a Sharp Charm blade: skill-scaling, bleeding edge.",
       "rarity": "uncommon",
       "family": "conversion",
-      "tags": ["weapon", "skill", "bleed"],
+      "tags": [
+        "weapon",
+        "skill",
+        "bleed"
+      ],
       "type": "weapon_profile",
       "maxStacks": 1,
-      "excludes": ["heavy_weapon", "fire_weapon", "wind_weapon"],
-      "effect": { "charmId": "sharp_charm_sword" }
+      "excludes": [
+        "heavy_weapon",
+        "fire_weapon",
+        "wind_weapon"
+      ],
+      "effect": {
+        "charmId": "sharp_charm_sword"
+      }
     },
     {
       "id": "heavy_weapon",
@@ -208,11 +285,20 @@
       "description": "Your sword fights like a Heavy Charm blade: raw strength scaling.",
       "rarity": "uncommon",
       "family": "conversion",
-      "tags": ["weapon", "strength"],
+      "tags": [
+        "weapon",
+        "strength"
+      ],
       "type": "weapon_profile",
       "maxStacks": 1,
-      "excludes": ["sharp_weapon", "fire_weapon", "wind_weapon"],
-      "effect": { "charmId": "heavy_charm_sword" }
+      "excludes": [
+        "sharp_weapon",
+        "fire_weapon",
+        "wind_weapon"
+      ],
+      "effect": {
+        "charmId": "heavy_charm_sword"
+      }
     },
     {
       "id": "fire_weapon",
@@ -221,11 +307,21 @@
       "description": "Your sword fights like a Fire Charm blade: mana-fed arcane edge.",
       "rarity": "rare",
       "family": "conversion",
-      "tags": ["weapon", "mana", "fire"],
+      "tags": [
+        "weapon",
+        "mana",
+        "fire"
+      ],
       "type": "weapon_profile",
       "maxStacks": 1,
-      "excludes": ["sharp_weapon", "heavy_weapon", "wind_weapon"],
-      "effect": { "charmId": "fire_charm_sword" }
+      "excludes": [
+        "sharp_weapon",
+        "heavy_weapon",
+        "wind_weapon"
+      ],
+      "effect": {
+        "charmId": "fire_charm_sword"
+      }
     },
     {
       "id": "wind_weapon",
@@ -234,11 +330,21 @@
       "description": "Your sword fights like a Wind Charm blade: mana-fed swift edge.",
       "rarity": "rare",
       "family": "conversion",
-      "tags": ["weapon", "mana", "wind"],
+      "tags": [
+        "weapon",
+        "mana",
+        "wind"
+      ],
       "type": "weapon_profile",
       "maxStacks": 1,
-      "excludes": ["sharp_weapon", "heavy_weapon", "fire_weapon"],
-      "effect": { "charmId": "wind_charm_sword" }
+      "excludes": [
+        "sharp_weapon",
+        "heavy_weapon",
+        "fire_weapon"
+      ],
+      "effect": {
+        "charmId": "wind_charm_sword"
+      }
     },
     {
       "id": "sturdy_shield",
@@ -247,11 +353,20 @@
       "description": "Your shield fights like a Sturdy Charm shield: strength-based bulk.",
       "rarity": "uncommon",
       "family": "conversion",
-      "tags": ["shield", "strength", "defence"],
+      "tags": [
+        "shield",
+        "strength",
+        "defence"
+      ],
       "type": "shield_profile",
       "maxStacks": 1,
-      "excludes": ["warding_shield", "lucky_shield"],
-      "effect": { "charmId": "sturdy_charm_shield" }
+      "excludes": [
+        "warding_shield",
+        "lucky_shield"
+      ],
+      "effect": {
+        "charmId": "sturdy_charm_shield"
+      }
     },
     {
       "id": "warding_shield",
@@ -260,11 +375,20 @@
       "description": "Your shield fights like an Elemental Charm shield: mana-based wards.",
       "rarity": "uncommon",
       "family": "conversion",
-      "tags": ["shield", "mana", "defence"],
+      "tags": [
+        "shield",
+        "mana",
+        "defence"
+      ],
       "type": "shield_profile",
       "maxStacks": 1,
-      "excludes": ["sturdy_shield", "lucky_shield"],
-      "effect": { "charmId": "elemental_charm_shield" }
+      "excludes": [
+        "sturdy_shield",
+        "lucky_shield"
+      ],
+      "effect": {
+        "charmId": "elemental_charm_shield"
+      }
     },
     {
       "id": "lucky_shield",
@@ -273,11 +397,20 @@
       "description": "Your shield fights like a Lucky Charm shield: fortune-turning guard.",
       "rarity": "uncommon",
       "family": "conversion",
-      "tags": ["shield", "luck", "defence"],
+      "tags": [
+        "shield",
+        "luck",
+        "defence"
+      ],
       "type": "shield_profile",
       "maxStacks": 1,
-      "excludes": ["sturdy_shield", "warding_shield"],
-      "effect": { "charmId": "lucky_charm_shield" }
+      "excludes": [
+        "sturdy_shield",
+        "warding_shield"
+      ],
+      "effect": {
+        "charmId": "lucky_charm_shield"
+      }
     },
     {
       "id": "quick_stab_unlock",
@@ -286,10 +419,17 @@
       "description": "Learn Quick Stab for this run — no Sharp Charm socket required.",
       "rarity": "rare",
       "family": "unlock",
-      "tags": ["unlock", "pierce", "bleed"],
+      "tags": [
+        "unlock",
+        "pierce",
+        "bleed"
+      ],
       "type": "unlock_ability",
       "maxStacks": 1,
-      "effect": { "abilityId": "quick_stab", "charmId": "sharp_charm_sword" }
+      "effect": {
+        "abilityId": "quick_stab",
+        "charmId": "sharp_charm_sword"
+      }
     },
     {
       "id": "guard_break_unlock",
@@ -298,10 +438,17 @@
       "description": "Learn Guard Break for this run — no Heavy Charm socket required.",
       "rarity": "rare",
       "family": "unlock",
-      "tags": ["unlock", "heavy", "stagger"],
+      "tags": [
+        "unlock",
+        "heavy",
+        "stagger"
+      ],
       "type": "unlock_ability",
       "maxStacks": 1,
-      "effect": { "abilityId": "guard_break", "charmId": "heavy_charm_sword" }
+      "effect": {
+        "abilityId": "guard_break",
+        "charmId": "heavy_charm_sword"
+      }
     },
     {
       "id": "curiosity",
@@ -310,10 +457,32 @@
       "description": "+1 kanji reroll on every upgrade card screen this run.",
       "rarity": "uncommon",
       "family": "knowledge",
-      "tags": ["knowledge", "reroll"],
+      "tags": [
+        "knowledge",
+        "reroll"
+      ],
       "type": "knowledge",
       "maxStacks": 3,
-      "effect": { "knowledge": "curiosity" }
+      "effect": {
+        "knowledge": "curiosity"
+      }
+    },
+    {
+      "id": "camp_comfort",
+      "name": "Camp Comfort",
+      "nameJa": "快適な野営",
+      "description": "+1 action at every rest site this run (stackable).",
+      "rarity": "uncommon",
+      "family": "knowledge",
+      "tags": [
+        "knowledge",
+        "rest"
+      ],
+      "type": "knowledge",
+      "maxStacks": 2,
+      "effect": {
+        "knowledge": "camp_comfort"
+      }
     },
     {
       "id": "memory",
@@ -322,10 +491,15 @@
       "description": "Upgrade screens offer 4 cards instead of 3.",
       "rarity": "uncommon",
       "family": "knowledge",
-      "tags": ["knowledge", "cards"],
+      "tags": [
+        "knowledge",
+        "cards"
+      ],
       "type": "knowledge",
       "maxStacks": 1,
-      "effect": { "knowledge": "memory" }
+      "effect": {
+        "knowledge": "memory"
+      }
     },
     {
       "id": "recall",
@@ -334,11 +508,18 @@
       "description": "Card tag-matching weighs twice as much (better-fit offers).",
       "rarity": "rare",
       "family": "knowledge",
-      "tags": ["knowledge", "cards"],
+      "tags": [
+        "knowledge",
+        "cards"
+      ],
       "type": "knowledge",
       "maxStacks": 1,
-      "prerequisites": ["memory"],
-      "effect": { "knowledge": "recall" }
+      "prerequisites": [
+        "memory"
+      ],
+      "effect": {
+        "knowledge": "recall"
+      }
     },
     {
       "id": "perfect_recall",
@@ -347,11 +528,18 @@
       "description": "Battle-drop card screens roll as if you were 2 map columns deeper.",
       "rarity": "rare",
       "family": "knowledge",
-      "tags": ["knowledge", "cards"],
+      "tags": [
+        "knowledge",
+        "cards"
+      ],
       "type": "knowledge",
       "maxStacks": 1,
-      "prerequisites": ["recall"],
-      "effect": { "knowledge": "perfect_recall" }
+      "prerequisites": [
+        "recall"
+      ],
+      "effect": {
+        "knowledge": "perfect_recall"
+      }
     },
     {
       "id": "enlightenment",
@@ -360,11 +548,18 @@
       "description": "Every card screen you open is raised one rarity tier (up to epic).",
       "rarity": "epic",
       "family": "knowledge",
-      "tags": ["knowledge", "cards"],
+      "tags": [
+        "knowledge",
+        "cards"
+      ],
       "type": "knowledge",
       "maxStacks": 1,
-      "prerequisites": ["perfect_recall"],
-      "effect": { "knowledge": "enlightenment" }
+      "prerequisites": [
+        "perfect_recall"
+      ],
+      "effect": {
+        "knowledge": "enlightenment"
+      }
     },
     {
       "id": "sharpened_slash",
@@ -373,10 +568,17 @@
       "description": "Forward Slash deals +10% damage.",
       "rarity": "common",
       "family": "ability",
-      "tags": ["ability", "forward_slash", "slash"],
+      "tags": [
+        "ability",
+        "forward_slash",
+        "slash"
+      ],
       "type": "ability_modifier",
       "maxStacks": 3,
-      "effect": { "abilityId": "forward_slash", "damageMultiplier": 0.1 }
+      "effect": {
+        "abilityId": "forward_slash",
+        "damageMultiplier": 0.1
+      }
     },
     {
       "id": "sweeping_slash",
@@ -385,10 +587,17 @@
       "description": "Forward Slash strikes twice (second hit at 60% damage).",
       "rarity": "rare",
       "family": "ability",
-      "tags": ["ability", "forward_slash", "slash"],
+      "tags": [
+        "ability",
+        "forward_slash",
+        "slash"
+      ],
       "type": "ability_modifier",
       "maxStacks": 1,
-      "effect": { "abilityId": "forward_slash", "doubleHit": true }
+      "effect": {
+        "abilityId": "forward_slash",
+        "doubleHit": true
+      }
     },
     {
       "id": "keen_edge",
@@ -397,10 +606,18 @@
       "description": "Forward Slash has +10% critical chance.",
       "rarity": "uncommon",
       "family": "ability",
-      "tags": ["ability", "forward_slash", "slash", "crit"],
+      "tags": [
+        "ability",
+        "forward_slash",
+        "slash",
+        "crit"
+      ],
       "type": "ability_modifier",
       "maxStacks": 2,
-      "effect": { "abilityId": "forward_slash", "critChanceBonus": 0.1 }
+      "effect": {
+        "abilityId": "forward_slash",
+        "critChanceBonus": 0.1
+      }
     },
     {
       "id": "kanji_attunement_slash",
@@ -409,10 +626,16 @@
       "description": "One random kanji in Forward Slash's pool is strengthened by one tier (up to silver).",
       "rarity": "uncommon",
       "family": "ability",
-      "tags": ["ability", "forward_slash", "kanji"],
+      "tags": [
+        "ability",
+        "forward_slash",
+        "kanji"
+      ],
       "type": "kanji_tier_up",
       "maxStacks": 21,
-      "effect": { "abilityId": "forward_slash" }
+      "effect": {
+        "abilityId": "forward_slash"
+      }
     },
     {
       "id": "deep_cut",
@@ -421,10 +644,22 @@
       "description": "Quick Stab applies Bleed for 2 turns on hit.",
       "rarity": "uncommon",
       "family": "ability",
-      "tags": ["ability", "quick_stab", "bleed"],
+      "tags": [
+        "ability",
+        "quick_stab",
+        "bleed"
+      ],
       "type": "ability_modifier",
       "maxStacks": 1,
-      "effect": { "abilityId": "quick_stab", "onHitEffects": [{ "effectId": "bleed", "duration": 2 }] }
+      "effect": {
+        "abilityId": "quick_stab",
+        "onHitEffects": [
+          {
+            "effectId": "bleed",
+            "duration": 2
+          }
+        ]
+      }
     },
     {
       "id": "fleet_stab",
@@ -433,10 +668,17 @@
       "description": "Quick Stab costs 1 less Energy (min 1).",
       "rarity": "common",
       "family": "ability",
-      "tags": ["ability", "quick_stab", "pierce"],
+      "tags": [
+        "ability",
+        "quick_stab",
+        "pierce"
+      ],
       "type": "ability_modifier",
       "maxStacks": 2,
-      "effect": { "abilityId": "quick_stab", "staminaCostDelta": -1 }
+      "effect": {
+        "abilityId": "quick_stab",
+        "staminaCostDelta": -1
+      }
     },
     {
       "id": "assassinate",
@@ -445,10 +687,17 @@
       "description": "Quick Stab deals +50% damage to enemies below 25% HP.",
       "rarity": "rare",
       "family": "ability",
-      "tags": ["ability", "quick_stab", "pierce"],
+      "tags": [
+        "ability",
+        "quick_stab",
+        "pierce"
+      ],
       "type": "ability_modifier",
       "maxStacks": 1,
-      "effect": { "abilityId": "quick_stab", "executeBonus": 0.5 }
+      "effect": {
+        "abilityId": "quick_stab",
+        "executeBonus": 0.5
+      }
     },
     {
       "id": "kanji_attunement_stab",
@@ -457,10 +706,16 @@
       "description": "One random kanji in Quick Stab's pool is strengthened by one tier (up to silver).",
       "rarity": "uncommon",
       "family": "ability",
-      "tags": ["ability", "quick_stab", "kanji"],
+      "tags": [
+        "ability",
+        "quick_stab",
+        "kanji"
+      ],
       "type": "kanji_tier_up",
       "maxStacks": 15,
-      "effect": { "abilityId": "quick_stab" }
+      "effect": {
+        "abilityId": "quick_stab"
+      }
     },
     {
       "id": "fortified_stance",
@@ -469,10 +724,17 @@
       "description": "Setup Defence costs 1 less Energy (min 1).",
       "rarity": "common",
       "family": "ability",
-      "tags": ["ability", "setup_defence", "guard"],
+      "tags": [
+        "ability",
+        "setup_defence",
+        "guard"
+      ],
       "type": "ability_modifier",
       "maxStacks": 2,
-      "effect": { "abilityId": "setup_defence", "staminaCostDelta": -1 }
+      "effect": {
+        "abilityId": "setup_defence",
+        "staminaCostDelta": -1
+      }
     },
     {
       "id": "eternal_guard",
@@ -481,11 +743,20 @@
       "description": "Setup Defence costs 1 less Energy (min 1).",
       "rarity": "rare",
       "family": "ability",
-      "tags": ["ability", "setup_defence", "guard"],
+      "tags": [
+        "ability",
+        "setup_defence",
+        "guard"
+      ],
       "type": "ability_modifier",
       "maxStacks": 1,
-      "prerequisites": ["fortified_stance"],
-      "effect": { "abilityId": "setup_defence", "staminaCostDelta": -1 }
+      "prerequisites": [
+        "fortified_stance"
+      ],
+      "effect": {
+        "abilityId": "setup_defence",
+        "staminaCostDelta": -1
+      }
     },
     {
       "id": "kanji_attunement_defence",
@@ -494,10 +765,17 @@
       "description": "One random kanji in Setup Defence's pool is strengthened by one tier (up to silver).",
       "rarity": "uncommon",
       "family": "ability",
-      "tags": ["ability", "setup_defence", "kanji", "guard"],
+      "tags": [
+        "ability",
+        "setup_defence",
+        "kanji",
+        "guard"
+      ],
       "type": "kanji_tier_up",
       "maxStacks": 15,
-      "effect": { "abilityId": "setup_defence" }
+      "effect": {
+        "abilityId": "setup_defence"
+      }
     },
     {
       "id": "inferno_arc",
@@ -506,10 +784,17 @@
       "description": "Flame Arc deals +15% damage.",
       "rarity": "uncommon",
       "family": "ability",
-      "tags": ["ability", "flame_arc", "fire"],
+      "tags": [
+        "ability",
+        "flame_arc",
+        "fire"
+      ],
       "type": "ability_modifier",
       "maxStacks": 2,
-      "effect": { "abilityId": "flame_arc", "damageMultiplier": 0.15 }
+      "effect": {
+        "abilityId": "flame_arc",
+        "damageMultiplier": 0.15
+      }
     },
     {
       "id": "searing_arc",
@@ -518,10 +803,22 @@
       "description": "Flame Arc applies Burn for 2 turns on hit.",
       "rarity": "uncommon",
       "family": "ability",
-      "tags": ["ability", "flame_arc", "fire"],
+      "tags": [
+        "ability",
+        "flame_arc",
+        "fire"
+      ],
       "type": "ability_modifier",
       "maxStacks": 1,
-      "effect": { "abilityId": "flame_arc", "onHitEffects": [{ "effectId": "burn", "duration": 2 }] }
+      "effect": {
+        "abilityId": "flame_arc",
+        "onHitEffects": [
+          {
+            "effectId": "burn",
+            "duration": 2
+          }
+        ]
+      }
     },
     {
       "id": "flame_mastery",
@@ -530,10 +827,18 @@
       "description": "Flame Arc has +15% critical chance.",
       "rarity": "rare",
       "family": "ability",
-      "tags": ["ability", "flame_arc", "fire", "crit"],
+      "tags": [
+        "ability",
+        "flame_arc",
+        "fire",
+        "crit"
+      ],
       "type": "ability_modifier",
       "maxStacks": 1,
-      "effect": { "abilityId": "flame_arc", "critChanceBonus": 0.15 }
+      "effect": {
+        "abilityId": "flame_arc",
+        "critChanceBonus": 0.15
+      }
     },
     {
       "id": "kanji_attunement_flame",
@@ -542,10 +847,17 @@
       "description": "One random kanji in Flame Arc's pool is strengthened by one tier (up to silver).",
       "rarity": "uncommon",
       "family": "ability",
-      "tags": ["ability", "flame_arc", "kanji", "fire"],
+      "tags": [
+        "ability",
+        "flame_arc",
+        "kanji",
+        "fire"
+      ],
       "type": "kanji_tier_up",
       "maxStacks": 18,
-      "effect": { "abilityId": "flame_arc" }
+      "effect": {
+        "abilityId": "flame_arc"
+      }
     },
     {
       "id": "razor_gale",
@@ -554,10 +866,17 @@
       "description": "Gale Strike deals +15% damage.",
       "rarity": "uncommon",
       "family": "ability",
-      "tags": ["ability", "gale_strike", "wind"],
+      "tags": [
+        "ability",
+        "gale_strike",
+        "wind"
+      ],
       "type": "ability_modifier",
       "maxStacks": 2,
-      "effect": { "abilityId": "gale_strike", "damageMultiplier": 0.15 }
+      "effect": {
+        "abilityId": "gale_strike",
+        "damageMultiplier": 0.15
+      }
     },
     {
       "id": "cyclone",
@@ -566,10 +885,17 @@
       "description": "Gale Strike strikes twice (second hit at 60% damage).",
       "rarity": "rare",
       "family": "ability",
-      "tags": ["ability", "gale_strike", "wind"],
+      "tags": [
+        "ability",
+        "gale_strike",
+        "wind"
+      ],
       "type": "ability_modifier",
       "maxStacks": 1,
-      "effect": { "abilityId": "gale_strike", "doubleHit": true }
+      "effect": {
+        "abilityId": "gale_strike",
+        "doubleHit": true
+      }
     },
     {
       "id": "tailwind",
@@ -578,10 +904,17 @@
       "description": "Gale Strike costs 1 less Energy (min 1).",
       "rarity": "common",
       "family": "ability",
-      "tags": ["ability", "gale_strike", "wind"],
+      "tags": [
+        "ability",
+        "gale_strike",
+        "wind"
+      ],
       "type": "ability_modifier",
       "maxStacks": 2,
-      "effect": { "abilityId": "gale_strike", "staminaCostDelta": -1 }
+      "effect": {
+        "abilityId": "gale_strike",
+        "staminaCostDelta": -1
+      }
     },
     {
       "id": "kanji_attunement_gale",
@@ -590,10 +923,17 @@
       "description": "One random kanji in Gale Strike's pool is strengthened by one tier (up to silver).",
       "rarity": "uncommon",
       "family": "ability",
-      "tags": ["ability", "gale_strike", "kanji", "wind"],
+      "tags": [
+        "ability",
+        "gale_strike",
+        "kanji",
+        "wind"
+      ],
       "type": "kanji_tier_up",
       "maxStacks": 15,
-      "effect": { "abilityId": "gale_strike" }
+      "effect": {
+        "abilityId": "gale_strike"
+      }
     },
     {
       "id": "demolition",
@@ -602,10 +942,17 @@
       "description": "Guard Break deals +15% damage.",
       "rarity": "uncommon",
       "family": "ability",
-      "tags": ["ability", "guard_break", "heavy"],
+      "tags": [
+        "ability",
+        "guard_break",
+        "heavy"
+      ],
       "type": "ability_modifier",
       "maxStacks": 2,
-      "effect": { "abilityId": "guard_break", "damageMultiplier": 0.15 }
+      "effect": {
+        "abilityId": "guard_break",
+        "damageMultiplier": 0.15
+      }
     },
     {
       "id": "staggering_break",
@@ -614,10 +961,22 @@
       "description": "Guard Break applies Blunt for 2 turns on hit.",
       "rarity": "uncommon",
       "family": "ability",
-      "tags": ["ability", "guard_break", "stagger"],
+      "tags": [
+        "ability",
+        "guard_break",
+        "stagger"
+      ],
       "type": "ability_modifier",
       "maxStacks": 1,
-      "effect": { "abilityId": "guard_break", "onHitEffects": [{ "effectId": "blunt", "duration": 2 }] }
+      "effect": {
+        "abilityId": "guard_break",
+        "onHitEffects": [
+          {
+            "effectId": "blunt",
+            "duration": 2
+          }
+        ]
+      }
     },
     {
       "id": "kanji_attunement_break",
@@ -626,10 +985,16 @@
       "description": "One random kanji in Guard Break's pool is strengthened by one tier (up to silver).",
       "rarity": "uncommon",
       "family": "ability",
-      "tags": ["ability", "guard_break", "kanji"],
+      "tags": [
+        "ability",
+        "guard_break",
+        "kanji"
+      ],
       "type": "kanji_tier_up",
       "maxStacks": 12,
-      "effect": { "abilityId": "guard_break" }
+      "effect": {
+        "abilityId": "guard_break"
+      }
     },
     {
       "id": "tectonic_force",
@@ -638,10 +1003,18 @@
       "description": "Seismic Slam deals +15% damage.",
       "rarity": "uncommon",
       "family": "ability",
-      "tags": ["ability", "seismic_slam", "heavy", "earth"],
+      "tags": [
+        "ability",
+        "seismic_slam",
+        "heavy",
+        "earth"
+      ],
       "type": "ability_modifier",
       "maxStacks": 2,
-      "effect": { "abilityId": "seismic_slam", "damageMultiplier": 0.15 }
+      "effect": {
+        "abilityId": "seismic_slam",
+        "damageMultiplier": 0.15
+      }
     },
     {
       "id": "aftershock",
@@ -650,10 +1023,17 @@
       "description": "Seismic Slam strikes twice (second hit at 60% damage).",
       "rarity": "rare",
       "family": "ability",
-      "tags": ["ability", "seismic_slam", "heavy"],
+      "tags": [
+        "ability",
+        "seismic_slam",
+        "heavy"
+      ],
       "type": "ability_modifier",
       "maxStacks": 1,
-      "effect": { "abilityId": "seismic_slam", "doubleHit": true }
+      "effect": {
+        "abilityId": "seismic_slam",
+        "doubleHit": true
+      }
     },
     {
       "id": "kanji_attunement_slam",
@@ -662,10 +1042,16 @@
       "description": "One random kanji in Seismic Slam's pool is strengthened by one tier (up to silver).",
       "rarity": "uncommon",
       "family": "ability",
-      "tags": ["ability", "seismic_slam", "kanji"],
+      "tags": [
+        "ability",
+        "seismic_slam",
+        "kanji"
+      ],
       "type": "kanji_tier_up",
       "maxStacks": 12,
-      "effect": { "abilityId": "seismic_slam" }
+      "effect": {
+        "abilityId": "seismic_slam"
+      }
     }
   ]
 }

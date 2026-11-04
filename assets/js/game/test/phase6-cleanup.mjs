@@ -86,6 +86,25 @@ console.log('staminaRegen turn-start proc')
   p3.weapon.socketCharmIds[1] = 'wind_spirit_charm_sword'
   p3._charmEffects = null
   check('wind spirit proc charm still equippable', p3.getSocketCharmInSlot(p3.weapon, 1)?.id === 'wind_spirit_charm_sword')
+
+  // Dead-proc fix: the regen now fires on_skill_used at 25%, not on_turn_start.
+  const { default: SocketProcSystem } = require('../systems/SocketProcSystem.js')
+  const { getSocketCharmById } = require('../data/socketCharms.js')
+  const procCharm = getSocketCharmById('wind_spirit_charm_sword')
+  const proc = (procCharm?.passiveProcs || [])[0]
+  check('wind spirit triggers on_skill_used', proc?.trigger === 'on_skill_used', `${proc?.trigger}`)
+  check('wind spirit chance is 25%', proc?.chance === 0.25, `${proc?.chance}`)
+  const sys = new SocketProcSystem(p3)
+  check('on_skill_used proc resolves via system', sys.getProcs('on_skill_used').length === 1)
+  check('no on_turn_start proc anymore', sys.getProcs('on_turn_start').length === 0)
+  // And the stamina actually lands when not full: proc fires after spending.
+  p3.stamina = p3.maxStamina - 2
+  const rolls = []
+  const originalRandom = Math.random
+  Math.random = () => 0.0
+  sys.trigger('on_skill_used', {})
+  Math.random = originalRandom
+  check('skill-used regen adds stamina when not full', p3.stamina === p3.maxStamina - 1, `${p3.stamina}`)
 }
 
 console.log('chest: no stat points')

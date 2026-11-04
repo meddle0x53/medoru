@@ -3,9 +3,11 @@ import Player, { getUpgradeCost } from '../entities/Player.js'
 import { setupHighDPIWorld } from '../highDpi.js'
 import { CHARMS, CHARM_TYPES } from '../data/charms.js'
 import { ALL_SOCKET_CHARMS } from '../data/socketCharms.js'
-import { getAbilityRarityColor } from '../data/actions.js'
+import { ALL_ACTIONS, getAbilityRarityColor } from '../data/actions.js'
 import { ITEMS } from '../data/items.js'
 import AbilityTooltip from '../ui/AbilityTooltip.js'
+
+const FORGET_COST = 40
 
 /**
  * Shop / Smith scene.
@@ -103,7 +105,84 @@ export default class ShopScene extends Phaser.Scene {
   createEquipmentButtons() {
     this.weaponBtn = this.createButton(220, 170, 'Upgrade Weapon', () => this.onUpgradeWeapon())
     this.shieldBtn = this.createButton(220, 360, 'Upgrade Shield', () => this.onUpgradeShield())
+    this.forgetBtn = this.createButton(220, 455, `Forget Ability (${FORGET_COST}G)`, () => this.onForgetAbility(), 0xc0392b)
     this.updateButtonStates()
+  }
+
+  // Paid build surgery: forget an ability and all its upgrades for gold.
+  onForgetAbility() {
+    if ((this.player.loadout.gold || 0) < FORGET_COST) {
+      this.showToast(`Need ${FORGET_COST} gold.`)
+      return
+    }
+    this.openForgetOverlay()
+  }
+
+  openForgetOverlay() {
+    this.closeForgetOverlay()
+    const overlay = this.add.container(GAME_CONFIG.width / 2, GAME_CONFIG.height / 2).setDepth(100)
+    overlay.add(this.add.rectangle(0, 0, GAME_CONFIG.width, GAME_CONFIG.height, 0x000000, 0.7).setInteractive())
+    overlay.add(this.add.rectangle(0, 0, 420, 360, 0x1a1a2e).setStrokeStyle(2, 0xc0392b))
+
+    overlay.add(this.add.text(0, -160, `Forget Ability (${FORGET_COST}G, upgrades lost)`, {
+      ...FONTS.default, fontSize: '16px', color: '#e74c3c',
+    }).setOrigin(0.5))
+
+    const knownIds = this.player.loadout.knownActionIds || []
+    const upgradesFor = id => (this.player.loadout.runUpgrades || [])
+      .filter(u => u.effect?.abilityId === id || (u.type === 'unlock_ability' && u.effect?.abilityId === id)).length
+
+    const rowH = 26
+    const maxRows = 11
+    knownIds.slice(0, maxRows).forEach((id, i) => {
+      const action = ALL_ACTIONS.find(a => a.id === id)
+      if (!action) return
+      const lost = upgradesFor(id)
+      const label = `${action.kanji || ''} ${action.name}${lost > 0 ? `  (-${lost} upgrade${lost > 1 ? 's' : ''})` : ''}`
+      const rowBg = this.add.rectangle(0, -125 + i * rowH, 380, rowH - 4, 0x2c3e50)
+        .setInteractive({ useHandCursor: true })
+      const rowText = this.add.text(0, -125 + i * rowH, label, {
+        ...FONTS.default, fontSize: '12px', color: '#ecf0f1',
+      }).setOrigin(0.5)
+      rowBg.on('pointerover', () => rowBg.setFillStyle(0xc0392b))
+      rowBg.on('pointerout', () => rowBg.setFillStyle(0x2c3e50))
+      rowBg.on('pointerdown', () => {
+        if ((this.player.loadout.gold || 0) < FORGET_COST) {
+          this.showToast(`Need ${FORGET_COST} gold.`)
+          return
+        }
+        const result = this.player.forgetAbility(id)
+        if (!result.ok) {
+          this.showToast(result.reason)
+          return
+        }
+        this.player.loadout.gold -= FORGET_COST
+        this.goldText.setText(`Gold: ${this.player.loadout.gold || 0}`)
+        this.player.saveLoadout()
+        this.closeForgetOverlay()
+        this.showToast(`${action.name} forgotten${result.removedUpgrades > 0 ? ` (+${result.removedUpgrades} upgrades lost)` : ''}.`)
+      })
+      overlay.add([rowBg, rowText])
+    })
+    if (knownIds.length > maxRows) {
+      overlay.add(this.add.text(0, -125 + maxRows * rowH, `…and ${knownIds.length - maxRows} more`, {
+        ...FONTS.default, fontSize: '11px', color: '#7f8c8d',
+      }).setOrigin(0.5))
+    }
+
+    const closeBtn = this.add.rectangle(0, 158, 120, 30, 0x7f8c8d).setInteractive({ useHandCursor: true })
+    const closeText = this.add.text(0, 158, 'Close', { ...FONTS.default, fontSize: '13px', color: '#ffffff' }).setOrigin(0.5)
+    closeBtn.on('pointerdown', () => this.closeForgetOverlay())
+    overlay.add([closeBtn, closeText])
+
+    this.forgetOverlay = overlay
+  }
+
+  closeForgetOverlay() {
+    if (this.forgetOverlay) {
+      this.forgetOverlay.destroy()
+      this.forgetOverlay = null
+    }
   }
 
   createLeaveButton() {

@@ -260,9 +260,16 @@ export default class LoadoutScene extends Phaser.Scene {
     })
   }
 
+  // Combat slot cap including Expanded Arsenal card bonuses; maxActiveSlots
+  // is kept current by Player.refreshActions().
+  maxCombatSlots() {
+    return this.player.maxActiveSlots ??
+      getMaxActiveActions(this.player.getEffectiveCapacity()) + (this.player.loadout?.activeSlotBonus || 0)
+  }
+
   createActiveActionSlots() {
     this.actionSlots = []
-    const maxSlots = getMaxActiveActions(this.player.getEffectiveCapacity())
+    const maxSlots = this.maxCombatSlots()
     const activeIds = this.player.loadout.activeActionIds
     const combatActiveIds = activeIds.filter(id => id !== 'use_item')
     const useItemActive = activeIds.includes('use_item')
@@ -388,7 +395,7 @@ export default class LoadoutScene extends Phaser.Scene {
       return
     }
 
-    const maxSlots = getMaxActiveActions(this.player.getEffectiveCapacity())
+    const maxSlots = this.maxCombatSlots()
     const combatActiveCount = this.player.loadout.activeActionIds.filter(id => id !== 'use_item').length
     if (combatActiveCount >= maxSlots) {
       this.showToast(`Max ${maxSlots} active abilities`)
@@ -1207,7 +1214,7 @@ export default class LoadoutScene extends Phaser.Scene {
     }
 
     const capacity = this.player.getEffectiveCapacity()
-    const maxActive = getMaxActiveActions(capacity)
+    const maxActive = this.maxCombatSlots()
     const maxBattle = getMaxBattlePoolActions(capacity)
     const maxOverall = getMaxOverallAbilities(capacity)
     const activeIds = this.player.loadout.activeActionIds
@@ -1519,7 +1526,7 @@ export default class LoadoutScene extends Phaser.Scene {
 
     const inBattle = this.player.loadout.selectedActionIds.includes(action.id)
     const isActive = this.player.loadout.activeActionIds.includes(action.id)
-    const maxActive = getMaxActiveActions(this.player.getEffectiveCapacity())
+    const maxActive = this.maxCombatSlots()
     const maxBattle = getMaxBattlePoolActions(this.player.getEffectiveCapacity())
 
     let btnY = 115
@@ -1668,7 +1675,7 @@ export default class LoadoutScene extends Phaser.Scene {
     const readouts = [
       `Max HP: ${p.maxHp}`,
       `Energy: ${p.maxStamina}`,
-      `Active slots: ${p.maxActiveSlots ?? getMaxActiveActions(capacity)}`,
+      `Active slots: ${p.maxActiveSlots ?? getMaxActiveActions(capacity)} (base ${getMaxActiveActions(capacity)} + bonus ${p.loadout?.activeSlotBonus || 0})`,
       `Battle pool: ${battleSelected}/${getMaxBattlePoolActions(capacity)}`,
       `Crit: ${Math.round(p.getCritChance() * 100)}%`,
       `Phys Def: ${p.getPhysicalDefense?.() ?? p.getTotalDefense?.() ?? 0}`,
@@ -1908,7 +1915,7 @@ export default class LoadoutScene extends Phaser.Scene {
   }
 
   fillActiveActionSlots() {
-    const maxSlots = getMaxActiveActions(this.player.getEffectiveCapacity())
+    const maxSlots = this.maxCombatSlots()
     const activeIds = this.player.loadout.activeActionIds
     const useItemActive = activeIds.includes('use_item')
 

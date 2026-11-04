@@ -7,7 +7,7 @@ import { default as LoadoutScene } from '../scenes/LoadoutScene.js'
 import { apply, UPGRADES, UPGRADES_BY_ID } from '../systems/UpgradeEngine.js'
 import { generateChoices, isValidFor, bumpTier } from '../systems/UpgradeGenerator.js'
 import { ALL_ACTIONS } from '../data/actions.js'
-import { getRewardPool, pickRewardAbilities } from '../data/abilityRewards.js'
+import { getRewardPool, pickRewardAbilities, pickUpgradeOffers, ABILITY_KNOWN_THRESHOLD } from '../data/abilityRewards.js'
 
 let passed = 0, failed = 0
 function check(name, cond, detail = '') {
@@ -85,6 +85,52 @@ console.log('generator (full pool, 500/tier)')
   }
   check('floor intact with full pool (1500 screens)', floorOk)
   check('no dups / exclusions / invalid', dups === 0 && excluded === 0 && invalid === 0, `${dups} ${excluded} ${invalid}`)
+}
+
+console.log('locked-ability gating (bug: modifiers for abilities the player lacks)')
+{
+  // Possession = loadout.knownActionIds. The fresh player knows neither
+  // flame_arc nor quick_stab, and has no charms socketed.
+  const p = freshPlayer()
+  const unknown = ['flame_arc', 'quick_stab', 'guard_break', 'gale_strike', 'seismic_slam']
+  const lockedAbilityCards = UPGRADES.filter(c =>
+    c.effect?.abilityId && (c.type === 'ability_modifier' || c.type === 'kanji_tier_up') &&
+    unknown.includes(c.effect.abilityId))
+  check('pool has locked-ability cards to test', lockedAbilityCards.length >= 8, `${lockedAbilityCards.length}`)
+  check('unknown-ability cards rejected by isValidFor',
+    lockedAbilityCards.every(c => !isValidFor(p, c)),
+    lockedAbilityCards.filter(c => isValidFor(p, c)).map(c => c.id).join(','))
+  check('starter abilities still valid',
+    UPGRADES.some(c => c.type === 'ability_modifier' && c.effect?.abilityId === 'forward_slash' && isValidFor(p, c)) &&
+    UPGRADES.some(c => c.type === 'ability_modifier' && c.effect?.abilityId === 'setup_defence' && isValidFor(p, c)))
+
+  // Socket-gated abilities count as owned once the run-unlock card is taken
+  // (learnAbility adds to knownActionIds; the card satisfies the code gate).
+  const p2 = freshPlayer()
+  apply(p2, 'quick_stab_unlock')
+  check('quick stab known after run-unlock card', p2.hasAbility('quick_stab'))
+  check('quick_stab modifiers valid after run-unlock card',
+    UPGRADES.some(c => c.type === 'ability_modifier' && c.effect?.abilityId === 'quick_stab' && isValidFor(p2, c)))
+
+  // A socketed charm alone does NOT count: the ability still has to be known.
+  const p3 = freshPlayer()
+  p3.weapon.socketCharmIds[0] = 'sharp_charm_sword'
+  check('charm without learning still rejected',
+    UPGRADES.filter(c => c.effect?.abilityId === 'quick_stab' && c.type !== 'unlock_ability')
+      .every(c => !isValidFor(p3, c)))
+
+  // unlock_ability cards themselves must stay offerable.
+  check('unlock_ability cards stay valid',
+    UPGRADES.filter(c => c.type === 'unlock_ability').every(c => isValidFor(p, c)))
+
+  let leaked = 0
+  for (let i = 0; i < 500; i++) {
+    for (const c of generateChoices(p, ['common', 'uncommon', 'rare', 'epic'][i % 4])) {
+      if (c.type === 'unlock_ability') continue
+      if (unknown.includes(c.effect?.abilityId)) leaked++
+    }
+  }
+  check('no unknown-ability cards across 500 screens', leaked === 0, `${leaked} leaks`)
 }
 
 console.log('knowledge effects (scene side)')
@@ -203,6 +249,36 @@ console.log('win-scene ability rewards (regression: isEligible must exist)')
   check('returns requested count when pool allows', picks.length === 3, `${picks.length}`)
   check('never offers known abilities', picks.every(id => !known.includes(id)), picks.join(','))
   check('picks are unique', new Set(picks).size === picks.length, picks.join(','))
+}
+
+console.log('win-scene upgrade offers at 7+ known abilities')
+{
+  const p = freshPlayer()
+  // Below threshold: not used by WinScene, but the picker itself is mode-agnostic.
+  const early = pickUpgradeOffers(p, 3)
+  check('offers are valid and unique', early.length === 3 && new Set(early.map(c => c.id)).size === 3 &&
+    early.every(c => isValidFor(p, c)), early.map(c => c.id).join(','))
+
+  // At/above threshold the pool of applicable cards shrinks as things max out.
+  const pMax = freshPlayer()
+  let guard = 0
+  while (guard++ < 5000) {
+    let any = false
+    for (const card of UPGRADES) { if (apply(pMax, card.id).ok) any = true }
+    if (!any) break
+  }
+  check('threshold constant is 7', ABILITY_KNOWN_THRESHOLD === 7)
+  check('exhausted pool yields no offers', pickUpgradeOffers(pMax, 3).length === 0)
+
+  // Rarity weighting: over many draws on a fresh player, commons should
+  // outnumber epics heavily.
+  const counts = { common: 0, uncommon: 0, rare: 0, epic: 0 }
+  for (let i = 0; i < 800; i++) {
+    for (const c of pickUpgradeOffers(p, 2)) counts[c.rarity] = (counts[c.rarity] || 0) + 1
+  }
+  check('commons dominate offers', counts.common > counts.rare && counts.common > counts.epic,
+    JSON.stringify(counts))
+  check('epics are the rarest offers', counts.epic <= counts.rare, JSON.stringify(counts))
 }
 
 console.log(`\n${passed} passed, ${failed} failed`)
