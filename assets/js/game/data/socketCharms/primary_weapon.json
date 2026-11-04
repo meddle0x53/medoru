@@ -304,11 +304,11 @@
       "kanji": "\u98a8",
       "slot": 2,
       "color": "#ccffcc",
-      "description": "Chance to regain a little stamina at the start of your turn.",
+      "description": "After any skill use, 25% chance to regain 1 stamina.",
       "passiveProcs": [
         {
-          "trigger": "on_turn_start",
-          "chance": 0.5,
+          "trigger": "on_skill_used",
+          "chance": 0.25,
           "effects": [{ "type": "regen_stamina", "value": 1 }]
         }
       ],

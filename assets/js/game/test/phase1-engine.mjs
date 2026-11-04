@@ -24,8 +24,22 @@ console.log('stat & flat cards')
   const baseSlots = p.maxActiveSlots
   check('capacity baseline 3', baseSlots === getMaxActiveActions(p.getEffectiveCapacity()), `got ${baseSlots}`)
   for (let i = 0; i < 3; i++) check(`might apply #${i + 1}`, apply(p, 'might').ok)
-  check('strength +3', p.baseStats.strength === baseStr + 3, `got ${p.baseStats.strength}`)
+  check('strength +15 (3x +5 front-loaded)', p.baseStats.strength === baseStr + 15, `got ${p.baseStats.strength}`)
   check('might maxStacks enforced', countUpgrade(p, 'might') === 3)
+  check('4th might gives +4 (taper)', (() => {
+    const px = freshPlayer()
+    for (let i = 0; i < 3; i++) apply(px, 'might')
+    const s3 = px.baseStats.strength
+    apply(px, 'might')
+    return px.baseStats.strength === s3 + 4
+  })())
+  check('8th might gives +3 (final taper)', (() => {
+    const px = freshPlayer()
+    for (let i = 0; i < 7; i++) apply(px, 'might')
+    const s7 = px.baseStats.strength
+    apply(px, 'might')
+    return px.baseStats.strength === s7 + 3
+  })())
   check('stamina_1 applies', apply(p, 'stamina_1').ok)
   check('stamina_2 chain applies', apply(p, 'stamina_2').ok)
   check('maxStamina exactly +2', p.maxStamina === baseStam + 2, `got ${p.maxStamina} want ${baseStam + 2}`)
@@ -117,6 +131,80 @@ console.log('rolls')
     p.loadout.staminaFlatBonus === 0 && p.loadout.activeSlotBonus === 0 && p.loadout.weaponProfileOverride === null && p.loadout.shieldProfileOverride === null)
   check('statPoints/statAllocations wiped', p.loadout.statPoints === undefined && p.loadout.statAllocations === undefined)
   check('baseStats restored', p.baseStats.strength === p.startingBaseStats.strength)
+
+  // flat_active_slot: the extra slot must survive into splitActions' trim,
+  // not just the maxActiveSlots field (bug: bar stayed at base 3).
+  const pSlots = freshPlayer()
+  apply(pSlots, 'capacity_1')
+  pSlots.loadout.selectedActionIds = ['forward_slash', 'setup_defence', 'shield_parry', 'focus', 'use_item']
+  pSlots.loadout.activeActionIds = ['forward_slash', 'setup_defence', 'shield_parry', 'focus']
+  pSlots.refreshActions()
+  check('activeSlotBonus yields a 4th combat active', pSlots.activeActions.length === 4, `${pSlots.activeActions.length}`)
+  const pSlotsBase = freshPlayer()
+  pSlotsBase.loadout.selectedActionIds = ['forward_slash', 'setup_defence', 'shield_parry', 'focus', 'use_item']
+  pSlotsBase.loadout.activeActionIds = ['forward_slash', 'setup_defence', 'shield_parry', 'focus']
+  pSlotsBase.refreshActions()
+  check('without bonus still trims to 3', pSlotsBase.activeActions.length === 3, `${pSlotsBase.activeActions.length}`)
+
+  // Constructor path: a saved run with activeSlotBonus must reload with the
+  // extra slot available (bug: maxActiveSlots was set without the bonus, so
+  // fresh loads after a refresh showed the base 3 again).
+  const memStore = new Map()
+  const prevStorage = globalThis.localStorage
+  globalThis.localStorage = {
+    getItem: k => (memStore.has(k) ? memStore.get(k) : null),
+    setItem: (k, v) => memStore.set(k, String(v)),
+    removeItem: k => memStore.delete(k),
+  }
+  const pSaved = freshPlayer()
+  apply(pSaved, 'capacity_1')
+  pSaved.saveLoadout()
+  const pReloaded = new Player({ name: 'Reload', level: 10 })
+  check('reloaded player keeps bonus slot count', pReloaded.maxActiveSlots === 4, `${pReloaded.maxActiveSlots}`)
+  check('reloaded player keeps activeSlotBonus', pReloaded.loadout.activeSlotBonus === 1)
+  globalThis.localStorage = prevStorage
+}
+
+console.log('forgetAbility')
+{
+  const p = freshPlayer()
+  apply(p, 'quick_stab_unlock')
+  apply(p, 'deep_cut')
+  apply(p, 'fleet_stab')
+  const before = p.loadout.runUpgrades.length
+  check('setup knows quick stab with upgrades', p.hasAbility('quick_stab') && p.loadout.runUpgrades.length === before)
+
+  const res = p.forgetAbility('quick_stab')
+  check('forget succeeds', res.ok, res.reason || '')
+  check('upgrades purged (unlock + 2 modifiers)', res.removedUpgrades === 3, `${res.removedUpgrades}`)
+  check('no longer known', !p.hasAbility('quick_stab'))
+  check('removed from selected/active', !p.loadout.selectedActionIds.includes('quick_stab') && !p.loadout.activeActionIds.includes('quick_stab'))
+  check('run-upgrades no longer reference it', (p.loadout.runUpgrades || []).every(u => u.effect?.abilityId !== 'quick_stab'))
+
+  const again = p.forgetAbility('quick_stab')
+  check('forgetting unknown ability fails', !again.ok)
+
+  const item = p.forgetAbility('use_item')
+  check('use_item cannot be forgotten', !item.ok)
+
+  // Attack floor: the two starter attacks are forward_slash + ... only one
+  // attack among starters, so forgetting the last attack must fail.
+  const p2 = freshPlayer()
+  // Give p2 a second attack first, then remove it, then try the last one.
+  p2.learnAbility('heavy_slash')
+  const res2 = p2.forgetAbility('forward_slash')
+  check('forgetting attack with another attack available works', res2.ok, res2.reason || '')
+  const res3 = p2.forgetAbility('heavy_slash')
+  check('forgetting the last attack fails', !res3.ok, res3.reason || '')
+  check('still knows heavy_slash', p2.hasAbility('heavy_slash'))
+
+  // kanjiTiers entry purged
+  const p3 = freshPlayer()
+  apply(p3, 'quick_stab_unlock')
+  apply(p3, 'kanji_attunement_stab')
+  check('tier recorded before forget', Object.keys(p3.loadout.kanjiTiers?.quick_stab || {}).length >= 0 && !!p3.loadout.kanjiTiers.quick_stab)
+  p3.forgetAbility('quick_stab')
+  check('kanjiTiers entry cleared', !p3.loadout.kanjiTiers?.quick_stab)
 }
 
 console.log('kanji tiers')
@@ -206,6 +294,68 @@ console.log('turn manager attack branch')
   const tm3 = new TurnManager(p3, [t3], {})
   const r3 = tm3.useSkill(slash, p3, t3, 'success')
   check('execute+doubleHit resolves', r3 && typeof r3.doubleHitDamage === 'number', JSON.stringify(r3))
+
+  // Perfect-draw accuracy: flawless kanji reduces/negates miss chance by size.
+  const tm4 = new TurnManager(p3, [t3], {})
+  const p4 = freshPlayer()
+  p4.stamina = p4.maxStamina
+  p4.lastKanjiWrongStrokes = 0
+  const tiers = [[3, 0.25], [6, 0.5], [11, 0.75], [14, 1]]
+  for (const [strokes, expected] of tiers) {
+    p4.lastKanjiStrokes = strokes
+    check(`perfect ${strokes} strokes -> reduction ${expected}`, tm4.perfectDrawMissReduction(p4, 'perfect') === expected)
+  }
+  p4.lastKanjiStrokes = 6
+  check('no reduction on success result', tm4.perfectDrawMissReduction(p4, 'success') === 0)
+  p4.lastKanjiWrongStrokes = 1
+  check('no reduction with wrong strokes', tm4.perfectDrawMissReduction(p4, 'perfect') === 0)
+  p4.lastKanjiWrongStrokes = 0
+  p4.lastKanjiStrokes = 0
+  check('no reduction without stroke data', tm4.perfectDrawMissReduction(p4, 'perfect') === 0)
+
+  // 13+ perfect vs a 95%-evasion enemy: miss chance clamps to 0, never misses.
+  const dodgeTarget = {
+    name: 'Dodger', hp: 5000, maxHp: 5000, buffs: [], activeEffects: [],
+    getMissChanceFor: () => 0.95,
+    takeDamage(d) { this.hp -= d; return d },
+    getIncomingDamageMultiplier: () => 1,
+    getDefense: () => 0,
+    getPhysicalDefense: () => 0,
+    getElementalDefense: () => 0,
+    getActiveEffectIds: () => [],
+    isAlive() { return this.hp > 0 },
+    incrementElementStreak: () => 1,
+    resetElementStreak: () => {},
+    applyEffect() {}, getEffectEntry: () => null,
+  }
+  p4.lastKanjiStrokes = 14
+  p4.lastKanjiWrongStrokes = 0
+  let misses = 0
+  for (let i = 0; i < 40; i++) {
+    p4.stamina = p4.maxStamina
+    dodgeTarget.hp = 5000
+    if (tm4.useSkill(slash, p4, dodgeTarget, 'perfect').missed) misses++
+  }
+  check('13+ perfect never misses (40/40 hit)', misses === 0, `${misses} misses`)
+  p4.lastKanjiStrokes = 4
+  misses = 0
+  for (let i = 0; i < 40; i++) {
+    p4.stamina = p4.maxStamina
+    dodgeTarget.hp = 5000
+    if (tm4.useSkill(slash, p4, dodgeTarget, 'perfect').missed) misses++
+  }
+  check('4-stroke perfect (-25%) still misses often vs 95% evasion', misses >= 15, `${misses}/40`)
+  p4.lastKanjiStrokes = 0
+  const origRand = Math.random
+  Math.random = () => 0.5 // 0.5 < 0.95 miss chance -> always miss, deterministic
+  misses = 0
+  for (let i = 0; i < 40; i++) {
+    p4.stamina = p4.maxStamina
+    dodgeTarget.hp = 5000
+    if (tm4.useSkill(slash, p4, dodgeTarget, 'success').missed) misses++
+  }
+  Math.random = origRand
+  check('no-draw attacks vs 95% evasion always miss (fixed rng)', misses === 40, `${misses}/40`)
 }
 
 console.log(`\n${passed} passed, ${failed} failed`)

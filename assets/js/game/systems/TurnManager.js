@@ -177,6 +177,21 @@ export default class TurnManager {
     }
   }
 
+  // Perfect-draw accuracy: a flawless kanji challenge (no wrong strokes)
+  // shaves miss chance off the incoming attack, scaled by kanji difficulty —
+  // bigger kanji demand more precision and reward a perfect draw more.
+  //   ≤4 strokes: -25%   5–8: -50%   9–12: -75%   13+: can't miss
+  perfectDrawMissReduction(performer, challengeResult) {
+    if (challengeResult !== 'perfect') return 0
+    if (!performer || performer.lastKanjiWrongStrokes !== 0) return 0
+    const strokes = performer.lastKanjiStrokes || 0
+    if (strokes <= 0) return 0
+    if (strokes <= 4) return 0.25
+    if (strokes <= 8) return 0.5
+    if (strokes <= 12) return 0.75
+    return 1
+  }
+
   useSkill(skill, performer, target, challengeResult) {
     if (!performer.canUseSkill(skill)) {
       return null
@@ -353,7 +368,11 @@ export default class TurnManager {
         // Status-effect incoming damage multiplier (frost / vulnerability)
         finalDamage = Math.floor(finalDamage * target.getIncomingDamageMultiplier())
 
-        const missChance = target.getMissChanceFor(performer)
+        const reduction = this.perfectDrawMissReduction(performer, challengeResult)
+        const missChance = Math.max(0, target.getMissChanceFor(performer) - reduction)
+        if (reduction > 0) {
+          this.log(`Perfect draw (${performer.lastKanjiStrokes} strokes): miss chance -${(reduction * 100).toFixed(0)}%.`)
+        }
         if (Math.random() < missChance) {
           this.log(`${target.name || 'The enemy'} evades the attack!`)
           return { type: 'attack', damage: 0, isCrit, multiplier, missed: true, blocked: false, defenseBypassed: performer.lastKanjiWrongStrokes === 0, lifesteal: 0, infusion: infusion ? { value: infusion.value, potency } : undefined }
@@ -592,7 +611,11 @@ export default class TurnManager {
         }
         finalDamage = Math.floor(finalDamage * target.getIncomingDamageMultiplier())
 
-        const missChance = target.getMissChanceFor(performer)
+        const reduction = this.perfectDrawMissReduction(performer, challengeResult)
+        const missChance = Math.max(0, target.getMissChanceFor(performer) - reduction)
+        if (reduction > 0) {
+          this.log(`Perfect draw (${performer.lastKanjiStrokes} strokes): miss chance -${(reduction * 100).toFixed(0)}%.`)
+        }
         if (Math.random() < missChance) {
           this.log(`${target.name || 'The enemy'} evades the attack!`)
           return { type: 'attack_defence', damage: 0, block: 0, isCrit, multiplier, missed: true, blocked: false, defenseBypassed: performer.lastKanjiWrongStrokes === 0, infusion: infusion ? { value: infusion.value, potency } : undefined }

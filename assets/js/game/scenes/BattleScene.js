@@ -3454,6 +3454,9 @@ export default class BattleScene extends Phaser.Scene {
       return
     }
 
+    // Wind Spirit Charm et al.: procs that fire after any successful skill use.
+    this.socketProcSystem.trigger('on_skill_used', { scene: this, result })
+
     if (!target.isAlive()) {
       this.onEnemyDefeated(target)
       // Extra defeat path: e.g. killing Danzaburō also kills his tanuki clones,

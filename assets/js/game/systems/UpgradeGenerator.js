@@ -19,7 +19,7 @@
  */
 
 import { UPGRADES } from './UpgradeEngine.js'
-import { ALL_ACTIONS } from '../data/actions.js'
+import { ALL_ACTIONS, getAvailableActions } from '../data/actions.js'
 import { getSocketCharmById } from '../data/socketCharms.js'
 
 // Normal rarity table (percent-scale relative weights).
@@ -79,6 +79,27 @@ function ownedCounts(player) {
   return counts
 }
 
+// Socket-charm gates that Player.skillUnavailableReason enforces in code
+// rather than via the ability JSON (guard_break's data gate only requires the
+// charm in ANY socket; battle usability requires socket 0 of the weapon).
+const CODE_GATED_ABILITIES = { quick_stab: 'sharp_charm_sword', guard_break: 'heavy_charm_sword' }
+
+// Does the player actually have this ability for this run? The game's notion
+// of possession is loadout.knownActionIds (Player.hasAbility) — abilities are
+// learned via unlock cards / battle rewards, and merely being "unlocked" in
+// the meta list means nothing. On top of being known, the ability must be
+// usable: data-driven gates (getAvailableActions) plus the code-level socket
+// gates, where the matching unlock_ability run card counts as ownership.
+function abilityAvailable(player, abilityId) {
+  if (typeof player.hasAbility === 'function' && !player.hasAbility(abilityId)) return false
+  const charmId = CODE_GATED_ABILITIES[abilityId]
+  if (charmId) {
+    return player.weapon?.socketCharmIds?.[0] === charmId ||
+      (typeof player.hasRunUnlock === 'function' && player.hasRunUnlock(charmId))
+  }
+  return getAvailableActions(player).some(a => a.id === abilityId)
+}
+
 /**
  * Would this card be applicable right now? Mirrors UpgradeEngine's
  * stack/exclusion/prerequisite checks without mutating anything.
@@ -91,6 +112,14 @@ export function isValidFor(player, card) {
   }
   for (const prereqId of card.prerequisites || []) {
     if ((counts[prereqId] || 0) <= 0) return false
+  }
+  // Ability-targeted cards (ability_modifier / kanji_tier_up) only apply to
+  // abilities the player can actually use this run: unlocked AND not gated
+  // by a missing socket charm / charm family / equipment. unlock_ability
+  // cards are the exception — they exist to grant a gated ability.
+  const abilityId = card.effect?.abilityId
+  if (abilityId && card.type !== 'unlock_ability') {
+    if (!abilityAvailable(player, abilityId)) return false
   }
   // Mirror the engine's silver-cap rejection for kanji tier cards: when the
   // ability's whole pool is silver, the card can no longer apply.

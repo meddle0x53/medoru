@@ -101,6 +101,8 @@ defmodule MedoruWeb.GameLive do
         }
       end)
 
+    locale = session["locale"] || "en"
+
     regular_words = Learning.list_learned_words(user.id, limit: 1000)
     english_words = Learning.list_english_learned_words(user.id, limit: 1000)
 
@@ -114,15 +116,13 @@ defmodule MedoruWeb.GameLive do
         %{
           word: w.text,
           reading: w.reading,
-          meaning: w.meaning,
+          meaning: Content.get_localized_meaning(w, locale),
           type: w.word_type,
           core_rank: w.core_rank,
           usage_frequency: w.usage_frequency,
           difficulty: w.difficulty
         }
       end)
-
-    locale = session["locale"] || "en"
 
     all_kanji =
       Kanji
@@ -265,6 +265,7 @@ defmodule MedoruWeb.GameLive do
       user_id: user.id,
       name: display_name,
       level: user_level,
+      locale: locale,
       daily_challenge_mode: Keyword.get(opts, :daily_challenge_mode, false),
       kanji_list: kanji_list,
       all_kanji: all_kanji,

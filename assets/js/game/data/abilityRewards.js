@@ -7,6 +7,8 @@
 import ABILITY_FAMILIES from './abilityFamilies.json'
 import { ALL_ACTIONS } from './actions.js'
 import { TILE_TYPES } from './tileTypes.js'
+import { UPGRADES } from '../systems/UpgradeEngine.js'
+import { isValidFor } from '../systems/UpgradeGenerator.js'
 
 export const ABILITY_REWARDS = {
   warrior: {
@@ -167,5 +169,41 @@ export function pickRewardAbilities(pool, count, alreadyKnownIds = [], tile = nu
     picks.push(weightedPickId(allOptions, weights))
   }
 
+  return picks
+}
+
+/**
+ * Win-screen reward mode switch: once the player knows this many abilities,
+ * battle wins offer upgrade cards instead of new abilities (build-deepening
+ * phase). New abilities still come from events / memory / cascade tiles.
+ */
+export const ABILITY_KNOWN_THRESHOLD = 7
+
+// Rarity distribution for upgrade offers on the win screen.
+const UPGRADE_OFFER_WEIGHTS = { common: 50, uncommon: 30, rare: 15, epic: 5 }
+
+/**
+ * Pick `count` distinct upgrade cards applicable to the player right now,
+ * weighted by inverse rarity (epic offers are rare). Returns card objects;
+ * may return fewer when the eligible pool is nearly exhausted.
+ */
+export function pickUpgradeOffers(player, count) {
+  const picks = []
+  const picked = new Set()
+  let guard = 0
+  while (picks.length < count && guard++ < 500) {
+    const candidates = UPGRADES.filter(c => !picked.has(c.id) && isValidFor(player, c))
+    if (candidates.length === 0) break
+    const total = candidates.reduce((sum, c) => sum + (UPGRADE_OFFER_WEIGHTS[c.rarity] || 1), 0)
+    let roll = Math.random() * total
+    for (const c of candidates) {
+      roll -= UPGRADE_OFFER_WEIGHTS[c.rarity] || 1
+      if (roll <= 0) {
+        picks.push(c)
+        picked.add(c.id)
+        break
+      }
+    }
+  }
   return picks
 }

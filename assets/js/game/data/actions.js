@@ -85,7 +85,7 @@ export function splitActions(player) {
 
   const maxActive = getMaxActiveActions(
     typeof player.getEffectiveCapacity === 'function' ? player.getEffectiveCapacity() : (player.capacity || 3)
-  )
+  ) + (player.loadout?.activeSlotBonus || 0)
 
   // Use loadout.activeActionIds if present, otherwise fall back to direct property
   const activeIds = player.loadout?.activeActionIds || player.activeActionIds || []

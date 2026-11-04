@@ -1,5 +1,6 @@
 import { GAME_CONFIG, FONTS } from '../config.js'
 import Player, { getUpgradeCost, ROLL_PRICES } from '../entities/Player.js'
+import { ALL_ACTIONS } from '../data/actions.js'
 import { setupHighDPIWorld } from '../highDpi.js'
 
 const ROLL_TIERS = ['common', 'uncommon', 'rare', 'epic']
@@ -18,9 +19,17 @@ export default class RestScene extends Phaser.Scene {
     this.mapIndex = data.mapIndex
   }
 
+  // Camp Comfort (knowledge upgrade): each owned stack grants +1 action per
+  // rest site visit.
+  campComfortCount() {
+    return (this.player.loadout?.runUpgrades || [])
+      .filter(u => (u.upgradeId || u.id) === 'camp_comfort').length
+  }
+
   create() {
     setupHighDPIWorld(this)
-    this.actionTaken = false
+    this.actionsUsed = 0
+    this.actionsAllowed = 1 + this.campComfortCount()
     this.createBackground()
     this.createHeader()
     this.createInfoPanel()
@@ -85,14 +94,89 @@ export default class RestScene extends Phaser.Scene {
     this.shieldBtn = this.createButton(GAME_CONFIG.width * 0.75, 220, 'Upgrade Shield', () => this.onUpgradeShield(), 0x2980b9)
     this.restBtn = this.createButton(GAME_CONFIG.width / 2, 300, 'Rest (heal 40% HP)', () => this.onRest(), 0x27ae60)
     this.createRollButtons()
-    this.createButton(GAME_CONFIG.width / 2, 480, 'Leave', () => this.completeTile(), 0x7f8c8d)
+    this.forgetBtn = this.createButton(GAME_CONFIG.width / 2, 442, 'Forget Ability (uses action)', () => this.onForgetAbility(), 0xc0392b)
+    this.createButton(GAME_CONFIG.width / 2, 496, 'Leave', () => this.completeTile(), 0x7f8c8d)
+  }
+
+  // Forget an ability (and all its upgrades) to open up the build. Free, but
+  // consumes one of the visit's actions — same economy as resting/upgrading.
+  onForgetAbility() {
+    if (this.actionsExhausted()) {
+      this.showToast('No actions left here.')
+      return
+    }
+    this.openForgetOverlay()
+  }
+
+  openForgetOverlay() {
+    this.closeForgetOverlay()
+    const overlay = this.add.container(GAME_CONFIG.width / 2, GAME_CONFIG.height / 2).setDepth(100)
+    overlay.add(this.add.rectangle(0, 0, GAME_CONFIG.width, GAME_CONFIG.height, 0x000000, 0.7).setInteractive())
+    overlay.add(this.add.rectangle(0, 0, 420, 360, 0x1a1a2e).setStrokeStyle(2, 0xc0392b))
+
+    overlay.add(this.add.text(0, -160, 'Forget Ability (upgrades lost)', {
+      ...FONTS.default, fontSize: '16px', color: '#e74c3c',
+    }).setOrigin(0.5))
+    overlay.add(this.add.text(0, -136, 'Free at the rest camp, but uses your action.', {
+      ...FONTS.default, fontSize: '11px', color: '#95a5a6',
+    }).setOrigin(0.5))
+
+    const knownIds = this.player.loadout.knownActionIds || []
+    const upgradesFor = id => (this.player.loadout.runUpgrades || [])
+      .filter(u => u.effect?.abilityId === id || (u.type === 'unlock_ability' && u.effect?.abilityId === id)).length
+
+    const rowH = 26
+    const maxRows = 11
+    knownIds.slice(0, maxRows).forEach((id, i) => {
+      const action = ALL_ACTIONS.find(a => a.id === id)
+      if (!action) return
+      const lost = upgradesFor(id)
+      const label = `${action.kanji || ''} ${action.name}${lost > 0 ? `  (-${lost} upgrade${lost > 1 ? 's' : ''})` : ''}`
+      const rowBg = this.add.rectangle(0, -110 + i * rowH, 380, rowH - 4, 0x2c3e50)
+        .setInteractive({ useHandCursor: true })
+      const rowText = this.add.text(0, -110 + i * rowH, label, {
+        ...FONTS.default, fontSize: '12px', color: '#ecf0f1',
+      }).setOrigin(0.5)
+      rowBg.on('pointerover', () => rowBg.setFillStyle(0xc0392b))
+      rowBg.on('pointerout', () => rowBg.setFillStyle(0x2c3e50))
+      rowBg.on('pointerdown', () => {
+        const result = this.player.forgetAbility(id)
+        if (!result.ok) {
+          this.showToast(result.reason)
+          return
+        }
+        this.closeForgetOverlay()
+        this.showToast(`${action.name} forgotten${result.removedUpgrades > 0 ? ` (+${result.removedUpgrades} upgrades lost)` : ''}.`)
+        this.consumeAction()
+      })
+      overlay.add([rowBg, rowText])
+    })
+    if (knownIds.length > maxRows) {
+      overlay.add(this.add.text(0, -110 + maxRows * rowH, `…and ${knownIds.length - maxRows} more`, {
+        ...FONTS.default, fontSize: '11px', color: '#7f8c8d',
+      }).setOrigin(0.5))
+    }
+
+    const closeBtn = this.add.rectangle(0, 158, 120, 30, 0x7f8c8d).setInteractive({ useHandCursor: true })
+    const closeText = this.add.text(0, 158, 'Close', { ...FONTS.default, fontSize: '13px', color: '#ffffff' }).setOrigin(0.5)
+    closeBtn.on('pointerdown', () => this.closeForgetOverlay())
+    overlay.add([closeBtn, closeText])
+
+    this.forgetOverlay = overlay
+  }
+
+  closeForgetOverlay() {
+    if (this.forgetOverlay) {
+      this.forgetOverlay.destroy()
+      this.forgetOverlay = null
+    }
   }
 
   // Gold-bought rolls share the inventory with scales-bought rolls. Buying
-  // one counts as the visit's single action, exactly like resting or
-  // upgrading equipment (one-action-per-visit rule).
+  // one consumes one of the visit's actions, exactly like resting or
+  // upgrading equipment (actions-per-visit rule, +1 per Camp Comfort).
   createRollButtons() {
-    this.add.text(GAME_CONFIG.width / 2, 348, 'Buy a roll (counts as your action):', {
+    this.add.text(GAME_CONFIG.width / 2, 348, 'Buy a roll (uses one action):', {
       ...FONTS.default,
       fontSize: '13px',
       color: '#95a5a6',
@@ -109,8 +193,8 @@ export default class RestScene extends Phaser.Scene {
   }
 
   onBuyRoll(tier) {
-    if (this.actionTaken) {
-      this.showToast('You already took an action here.')
+    if (this.actionsUsed >= this.actionsAllowed) {
+      this.showToast('No actions left here.')
       return
     }
     const result = this.player.buyRoll(tier, 'gold')
@@ -124,7 +208,7 @@ export default class RestScene extends Phaser.Scene {
     this.goldText.setText(`Gold: ${this.player.loadout.gold || 0}`)
     const btn = (this.rollBtns || []).find(b => b.tier === tier)
     if (btn) btn.text.setText(`${tier} ×${this.player.loadout.rollInventory?.[tier] || 0}\n${ROLL_PRICES.gold[tier]}G`)
-    this.disableActionButtons()
+    this.consumeAction()
   }
 
   createButton(x, y, label, onClick, color = 0x2980b9) {
@@ -147,17 +231,27 @@ export default class RestScene extends Phaser.Scene {
     return { bg, text, color, hover, out }
   }
 
-  disableActionButtons() {
-    if (this.actionTaken) return
-    this.actionTaken = true
-    ;[this.restBtn, this.weaponBtn, this.shieldBtn, ...(this.rollBtns || [])].forEach((btn) => {
+  // Spends one of the visit's actions; when they run out, the action buttons
+  // grey out. Leave stays available so the player can exit early.
+  consumeAction() {
+    this.actionsUsed++
+    if (this.actionsUsed < this.actionsAllowed) return
+    ;[this.restBtn, this.weaponBtn, this.shieldBtn, this.forgetBtn, ...(this.rollBtns || [])].forEach((btn) => {
       if (!btn) return
       btn.bg.removeInteractive()
       btn.bg.setFillStyle(0x555555)
     })
   }
 
+  actionsExhausted() {
+    return this.actionsUsed >= this.actionsAllowed
+  }
+
   onRest() {
+    if (this.actionsExhausted()) {
+      this.showToast('No actions left here.')
+      return
+    }
     if (this.player.hp >= this.player.maxHp) {
       this.showToast('You are already fully rested.')
       return
@@ -167,8 +261,11 @@ export default class RestScene extends Phaser.Scene {
     this.player.saveLoadout()
     this.showToast(`Recovered ${heal} HP`)
     this.updateInfo()
-    this.disableActionButtons()
-    this.time.delayedCall(800, () => this.completeTile())
+    this.consumeAction()
+    // Auto-continue to the map only when the rest consumed the last action.
+    if (this.actionsExhausted()) {
+      this.time.delayedCall(800, () => this.completeTile())
+    }
   }
 
   onUpgradeWeapon() {
@@ -180,6 +277,10 @@ export default class RestScene extends Phaser.Scene {
   }
 
   tryUpgrade(item, baseStatKey) {
+    if (this.actionsExhausted()) {
+      this.showToast('No actions left here.')
+      return
+    }
     if (!item) {
       this.showToast('No equipment.')
       return
@@ -199,7 +300,7 @@ export default class RestScene extends Phaser.Scene {
       this.showToast(`${item.name} upgraded to +${result.level}!`)
       this.goldText.setText(`Gold: ${this.player.loadout.gold || 0}`)
       this.updateInfo()
-      this.disableActionButtons()
+      this.consumeAction()
     } else {
       this.showToast(result.reason)
     }

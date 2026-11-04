@@ -12,7 +12,7 @@
  *
  * Passive proc format:
  *   {
- *     trigger: 'on_hit' | 'on_defend' | 'on_turn_start' | 'on_battle_start',
+ *     trigger: 'on_hit' | 'on_defend' | 'on_turn_start' | 'on_skill_used' | 'on_battle_start',
  *     chance: 0.15,
  *     effects: [
  *       { type: 'heal', value: 2 },

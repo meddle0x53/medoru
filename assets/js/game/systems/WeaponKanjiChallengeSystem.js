@@ -70,6 +70,8 @@ export default class WeaponKanjiChallengeSystem {
       onComplete: (result) => {
         const passed = result.completed && result.wrongStrokes < failThreshold
         const kanjiChar = selectedKanjiData.character
+        // Stroke count feeds the perfect-draw accuracy rule in TurnManager.
+        this.scene.player.setKanjiStrokeCount(totalStrokes)
 
         if (passed) {
           if (powerBonus > 0) {

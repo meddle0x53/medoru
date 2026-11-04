@@ -8,6 +8,7 @@ import { getEffect } from './EffectRegistry.js'
  *   - on_hit          player lands an attack
  *   - on_defend       player is hit by an enemy
  *   - on_turn_start   player turn begins
+ *   - on_skill_used   player successfully uses a skill
  *   - on_battle_start battle begins
  *
  * Supported effect types:
