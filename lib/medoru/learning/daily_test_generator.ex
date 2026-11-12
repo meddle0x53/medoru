@@ -19,6 +19,7 @@ defmodule Medoru.Learning.DailyTestGenerator do
   alias Medoru.Tests.Test
   alias Medoru.Content.Word
   alias Medoru.Content.WordKanji
+  alias Medoru.Tests.MeaningSegments
 
   # Daily test configuration
   # Base daily goal - will scale with user's learned words
@@ -736,6 +737,48 @@ defmodule Medoru.Learning.DailyTestGenerator do
           }
         })
 
+      "meaning_to_word" ->
+        {segments, indices} = MeaningSegments.pick_random(word.meaning)
+        display_meaning = MeaningSegments.join(segments)
+
+        Map.merge(base_attrs, %{
+          question_type: :multichoice,
+          question: "__MSG_WHAT_WORD_MEANS__|#{display_meaning}",
+          correct_answer: "#{word.text} / #{word.reading}",
+          points: 1,
+          options: fetch_word_display_options(word, user_id),
+          question_data: %{
+            "type" => "meaning_to_word",
+            "word_id" => word.id,
+            "word_text" => word.text,
+            "word_reading" => word.reading,
+            "meaning_indices" => indices,
+            "display_meaning" => display_meaning,
+            "is_new_word" => is_new
+          }
+        })
+
+      "meaning_to_text" ->
+        {segments, indices} = MeaningSegments.pick_random(word.meaning)
+        display_meaning = MeaningSegments.join(segments)
+
+        Map.merge(base_attrs, %{
+          question_type: :reading_text,
+          question: "__MSG_TYPE_WORD_FOR_MEANING__|#{display_meaning}",
+          correct_answer: "#{word.text} / #{word.reading}",
+          points: 2,
+          hints: ["__MSG_TYPE_JAPANESE_WORD__"],
+          question_data: %{
+            "type" => "meaning_to_text",
+            "word_id" => word.id,
+            "word_text" => word.text,
+            "word_reading" => word.reading,
+            "meaning_indices" => indices,
+            "display_meaning" => display_meaning,
+            "is_new_word" => is_new
+          }
+        })
+
       "reading_text" ->
         Map.merge(base_attrs, %{
           question_type: :reading_text,
@@ -917,7 +960,9 @@ defmodule Medoru.Learning.DailyTestGenerator do
       "word_to_reading",
       "reading_text",
       "image_to_meaning",
-      "kanji_writing"
+      "kanji_writing",
+      "meaning_to_word",
+      "meaning_to_text"
     ]
 
     # Remove duplicates while preserving order, then filter to valid types
@@ -993,6 +1038,28 @@ defmodule Medoru.Learning.DailyTestGenerator do
 
     # Ensure correct answer is only added once
     options = [word.reading | distractors]
+    options |> Enum.uniq() |> Enum.shuffle()
+  end
+
+  # Fetch word display options ("text / reading") with distractors
+  # Only uses words the user has learned (has UserProgress for)
+  # Does NOT filter by difficulty - any learned word can be a distractor
+  defp fetch_word_display_options(word, user_id) do
+    distractors =
+      Word
+      |> join(:inner, [w], up in Learning.UserProgress,
+        on: up.word_id == w.id and up.user_id == ^user_id
+      )
+      |> where([w], w.id != ^word.id)
+      |> where([w], w.mature == false)
+      |> order_by(fragment("RANDOM()"))
+      |> limit(@distractor_count)
+      |> select([w], %{text: w.text, reading: w.reading})
+      |> Repo.all()
+      |> Enum.map(&"#{&1.text} / #{&1.reading}")
+
+    # Ensure correct answer is only added once
+    options = ["#{word.text} / #{word.reading}" | distractors]
     options |> Enum.uniq() |> Enum.shuffle()
   end
 

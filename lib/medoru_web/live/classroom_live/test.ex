@@ -801,6 +801,81 @@ defmodule MedoruWeb.ClassroomLive.Test do
   # Reading text: validate meaning and reading separately, then record.
   defp handle_reading_text_answer(socket, params) do
     step = socket.assigns.current_step
+
+    if step.question_data["type"] == "meaning_to_text" do
+      handle_meaning_to_text_answer(socket, params)
+    else
+      handle_reading_text_answer_default(socket, params)
+    end
+  end
+
+  # Meaning-first typed step: single input validated against the word text or reading.
+  defp handle_meaning_to_text_answer(socket, params) do
+    step = socket.assigns.current_step
+    session = socket.assigns.session
+
+    answer =
+      params
+      |> Map.get("meaning_answer", socket.assigns.meaning_answer)
+      |> to_string()
+      |> String.trim()
+
+    if answer == "" do
+      {:noreply, put_flash(socket, :error, gettext("Please enter an answer"))}
+    else
+      word = if step.word_id, do: Content.get_word!(step.word_id), else: nil
+
+      if word do
+        is_correct =
+          ReadingAnswerValidator.validate_text_or_reading(word.text, word.reading, answer)
+
+        points_earned = if is_correct, do: step.points, else: 0
+
+        result =
+          Tests.record_step_answer(session.id, step.id, %{
+            "answer" => answer,
+            "time_spent_seconds" => 30,
+            "step_index" => step.order_index,
+            "is_correct" => is_correct,
+            "points_earned" => points_earned,
+            "metadata" => %{"meaning_to_text" => true}
+          })
+
+        case result do
+          {:ok, _step_answer} ->
+            maybe_update_attempt_progress(socket, fn attempt ->
+              %{
+                score: points_earned,
+                time_spent_seconds: attempt.time_spent_seconds + 30
+              }
+            end)
+
+            if is_correct do
+              move_to_next_step(socket, session)
+            else
+              {:noreply,
+               socket
+               |> assign(:feedback, :incorrect)
+               |> assign(:correct_meaning, word.text)
+               |> assign(:correct_reading, word.reading)
+               |> assign(:show_hint, true)}
+            end
+
+          {:error, changeset} ->
+            require Logger
+            Logger.error("Failed to submit answer: #{inspect(changeset.errors)}")
+
+            {:noreply,
+             put_flash(socket, :error, gettext("Failed to submit answer. Please try again."))}
+        end
+      else
+        {:noreply, put_flash(socket, :error, gettext("Error: word not found"))}
+      end
+    end
+  end
+
+  defp handle_reading_text_answer_default(socket, params) do
+    step = socket.assigns.current_step
     session = socket.assigns.session
     is_kana_only = step.question_data["is_kana_only"] || false
 
@@ -1639,24 +1714,37 @@ defmodule MedoruWeb.ClassroomLive.Test do
                 </span>
 
                 <%= if @current_step.step_type == :vocabulary do %>
-                  <p class="text-sm sm:text-base text-secondary mb-2 sm:mb-3">
-                    {vocabulary_question_prompt(@current_step)}
-                  </p>
-                  <h2 class="text-2xl sm:text-3xl font-bold text-primary font-japanese text-center">
-                    {@current_step.question_data["word_text"] || @current_step.question}
-                  </h2>
-                  <%= if @current_step.question_data["word_reading"] && @current_step.question_data["question_label"] != "reading" do %>
-                    <p class="text-center text-secondary text-sm sm:text-base mt-2">
-                      {gettext("Reading:")} {@current_step.question_data["word_reading"]}
+                  <%= if @current_step.question_data["type"] in ["meaning_to_word", "meaning_to_text"] do %>
+                    <p class="text-sm sm:text-base text-secondary mb-2 sm:mb-3">
+                      {meaning_first_prompt(@current_step)}
                     </p>
-                  <% end %>
-                  <%= if @current_step.question_data["word_meaning"] && @current_step.question_data["question_label"] == "reading" do %>
-                    <p class="text-center text-secondary text-sm sm:text-base mt-2">
-                      {gettext("Meaning:")} {localize_question_data_meaning(
-                        @current_step.question_data,
-                        @locale
-                      )}
+                    <h2 class="text-2xl sm:text-3xl font-bold text-primary text-center">
+                      {Content.localized_meaning_prompt(
+                        @current_step.question_data["word_id"] || @current_step.word_id,
+                        @locale,
+                        @current_step.question_data["meaning_indices"]
+                      ) || @current_step.question}
+                    </h2>
+                  <% else %>
+                    <p class="text-sm sm:text-base text-secondary mb-2 sm:mb-3">
+                      {vocabulary_question_prompt(@current_step)}
                     </p>
+                    <h2 class="text-2xl sm:text-3xl font-bold text-primary font-japanese text-center">
+                      {@current_step.question_data["word_text"] || @current_step.question}
+                    </h2>
+                    <%= if @current_step.question_data["word_reading"] && @current_step.question_data["question_label"] != "reading" do %>
+                      <p class="text-center text-secondary text-sm sm:text-base mt-2">
+                        {gettext("Reading:")} {@current_step.question_data["word_reading"]}
+                      </p>
+                    <% end %>
+                    <%= if @current_step.question_data["word_meaning"] && @current_step.question_data["question_label"] == "reading" do %>
+                      <p class="text-center text-secondary text-sm sm:text-base mt-2">
+                        {gettext("Meaning:")} {localize_question_data_meaning(
+                          @current_step.question_data,
+                          @locale
+                        )}
+                      </p>
+                    <% end %>
                   <% end %>
                 <% else %>
                   <%= if @current_step.question_type not in [:writing, :grammar_make_question_answer] do %>
@@ -1681,9 +1769,16 @@ defmodule MedoruWeb.ClassroomLive.Test do
                     <div class="space-y-2">
                       <%= for option <- @current_step.options do %>
                         <% display_option =
-                          if @current_step.question_data["question_label"] != "reading",
-                            do: localize_option(option, @locale),
-                            else: option %>
+                          cond do
+                            @current_step.question_data["type"] == "meaning_to_word" ->
+                              option
+
+                            @current_step.question_data["question_label"] != "reading" ->
+                              localize_option(option, @locale)
+
+                            true ->
+                              option
+                          end %>
                         <label class="flex items-center gap-3 p-4 bg-base-200 rounded-lg cursor-pointer hover:bg-base-300 transition-colors">
                           <input
                             type="radio"
@@ -1697,17 +1792,46 @@ defmodule MedoruWeb.ClassroomLive.Test do
                       <% end %>
                     </div>
                   <% :reading_text -> %>
-                    <MedoruWeb.LessonTestLive.ReadingTextComponent.reading_text_question
-                      step={@current_step}
-                      meaning_answer={@meaning_answer}
-                      reading_answer={@reading_answer}
-                      feedback={@feedback}
-                      show_hint={@show_hint}
-                      meaning_error={@meaning_error}
-                      reading_error={@reading_error}
-                      correct_meaning={@correct_meaning}
-                      correct_reading={@correct_reading}
-                    />
+                    <%= if @current_step.question_data["type"] == "meaning_to_text" do %>
+                      <div class="space-y-4" id={"meaning-text-#{@current_step.id}"}>
+                        <div>
+                          <label class="block text-sm font-medium text-base-content mb-2">
+                            {gettext("Type the Japanese word or its reading:")}
+                          </label>
+                          <.input
+                            type="text"
+                            name="meaning_answer"
+                            id={"meaning-answer-#{@current_step.id}"}
+                            value={@meaning_answer}
+                            placeholder={gettext("Enter the word or its reading...")}
+                            phx-change="update_meaning"
+                            class="w-full"
+                          />
+                        </div>
+                        <%= if @feedback == :incorrect do %>
+                          <div class="bg-error/10 rounded-xl p-4">
+                            <p class="font-semibold text-error">{gettext("Incorrect")}</p>
+                            <p class="text-error-content/80">
+                              {gettext("Word:")} <span class="font-japanese">{@correct_meaning}</span>
+                              {gettext("Reading:")}
+                              <span class="font-japanese">{@correct_reading}</span>
+                            </p>
+                          </div>
+                        <% end %>
+                      </div>
+                    <% else %>
+                      <MedoruWeb.LessonTestLive.ReadingTextComponent.reading_text_question
+                        step={@current_step}
+                        meaning_answer={@meaning_answer}
+                        reading_answer={@reading_answer}
+                        feedback={@feedback}
+                        show_hint={@show_hint}
+                        meaning_error={@meaning_error}
+                        reading_error={@reading_error}
+                        correct_meaning={@correct_meaning}
+                        correct_reading={@correct_reading}
+                      />
+                    <% end %>
                   <% :image_to_meaning -> %>
                     <div class="space-y-4">
                       <%= if @current_step.question_data["word_reading"] do %>
@@ -1965,6 +2089,14 @@ defmodule MedoruWeb.ClassroomLive.Test do
 
       true ->
         gettext("What is the meaning of this word?")
+    end
+  end
+
+  defp meaning_first_prompt(step) do
+    if step.question_data["type"] == "meaning_to_text" do
+      gettext("Type the Japanese word for this meaning:")
+    else
+      gettext("Which word means this?")
     end
   end
 

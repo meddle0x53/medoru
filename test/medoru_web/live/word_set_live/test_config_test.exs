@@ -63,4 +63,14 @@ defmodule MedoruWeb.WordSetLive.TestConfigTest do
 
     assert html =~ "5"
   end
+
+  test "renders meaning_to_word and meaning_to_text cards", %{
+    conn: conn,
+    word_set: word_set
+  } do
+    {:ok, _view, html} = live(conn, ~p"/words/sets/#{word_set.id}/test-config")
+
+    assert html =~ "Meaning to Word"
+    assert html =~ "Meaning to Text"
+  end
 end

@@ -11,6 +11,7 @@ defmodule Medoru.Tests.WordSetTestGenerator do
 
   alias Medoru.Repo
   alias Medoru.Tests
+  alias Medoru.Tests.MeaningSegments
   alias Medoru.Tests.TestStepBuilder
 
   @doc """
@@ -132,6 +133,54 @@ defmodule Medoru.Tests.WordSetTestGenerator do
     TestStepBuilder.add_distractors(step, word, distractor_count, distractor_pool,
       field: :meaning
     )
+  end
+
+  defp build_step_data(word, :meaning_to_word, distractor_count, distractor_pool) do
+    {segments, indices} = MeaningSegments.pick_random(word.meaning)
+
+    step = %{
+      step_type: :vocabulary,
+      question_type: :multichoice,
+      question: MeaningSegments.join(segments),
+      correct_answer: "#{word.text} / #{word.reading}",
+      word_id: word.id,
+      points: 0,
+      hints: ["Pick the Japanese word that matches the meaning"],
+      question_data: %{
+        "type" => "meaning_to_word",
+        "word_text" => word.text,
+        "word_reading" => word.reading,
+        "meaning_indices" => indices,
+        "question_label" => "word"
+      }
+    }
+
+    TestStepBuilder.add_distractors(step, word, distractor_count, distractor_pool,
+      field: :text,
+      format_option: fn w -> "#{w.text} / #{w.reading}" end
+    )
+  end
+
+  defp build_step_data(word, :meaning_to_text, _distractor_count, _distractor_pool) do
+    {segments, indices} = MeaningSegments.pick_random(word.meaning)
+
+    %{
+      step_type: :vocabulary,
+      question_type: :reading_text,
+      question: MeaningSegments.join(segments),
+      correct_answer: "#{word.text} / #{word.reading}",
+      word_id: word.id,
+      points: 0,
+      hints: ["Type the Japanese word or its hiragana reading"],
+      question_data: %{
+        "type" => "meaning_to_text",
+        "word_text" => word.text,
+        "word_reading" => word.reading,
+        "meaning_indices" => indices,
+        "question_label" => "word",
+        "text_mode" => "word_or_reading"
+      }
+    }
   end
 
   defp build_step_data(word, :word_to_reading, distractor_count, distractor_pool) do
@@ -336,6 +385,8 @@ defmodule Medoru.Tests.WordSetTestGenerator do
   defp validate_step_types(types) do
     allowed = [
       :word_to_meaning,
+      :meaning_to_word,
+      :meaning_to_text,
       :word_to_reading,
       :reading_text,
       :meaning_only,

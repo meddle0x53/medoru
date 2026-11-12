@@ -374,82 +374,11 @@ defmodule MedoruWeb.LessonTestLive.Show do
   @impl true
   def handle_event("submit_reading_text", _params, socket) do
     step = socket.assigns.current_step
-    is_kana_only = step.question_data["is_kana_only"] || false
-    meaning = String.trim(socket.assigns.meaning_answer)
-    reading = String.trim(socket.assigns.reading_answer)
 
-    # Validate inputs are not empty
-    if meaning == "" or (not is_kana_only and reading == "") do
-      {:noreply, put_flash(socket, :error, gettext("Please enter both meaning and reading"))}
+    if step.question_data["type"] == "meaning_to_text" do
+      submit_meaning_to_text(socket, step)
     else
-      session = socket.assigns.session
-
-      # Submit reading text answer with locale
-      locale = socket.assigns.locale
-
-      case LessonTestSession.submit_reading_text_answer(
-             session.id,
-             step.id,
-             meaning,
-             reading,
-             time_spent_seconds: 15,
-             locale: locale,
-             skip_reading: is_kana_only
-           ) do
-        {:correct, result} ->
-          socket =
-            socket
-            |> assign(:feedback, :correct)
-            |> assign(:session, result.session)
-            |> assign(:current_step, result.next_step)
-            |> assign(:session_state, LessonTestSession.get_session_state(result.session.id))
-            |> assign(:meaning_answer, "")
-            |> assign(:reading_answer, "")
-            |> assign(:grammar_pattern_answer, "")
-            |> assign(:make_question_answer_answers, %{"question" => "", "answer" => ""})
-            |> assign(:show_hint, false)
-            |> assign(:meaning_error, false)
-            |> assign(:reading_error, false)
-            |> assign(:correct_meaning, nil)
-            |> assign(:correct_reading, nil)
-            |> assign(:next_step_after_correction, nil)
-
-          {:noreply, socket}
-
-        {:incorrect, result} ->
-          # Don't advance to next_step yet - show the correction first
-          # Keep current_step as the one they got wrong so they can see the correct answer
-          # next_step will be assigned when they click Continue
-          socket =
-            socket
-            |> assign(:feedback, :incorrect)
-            |> assign(:session, result.session)
-            |> assign(:session_state, LessonTestSession.get_session_state(result.session.id))
-            |> assign(:meaning_answer, "")
-            |> assign(:reading_answer, "")
-            |> assign(:grammar_pattern_answer, "")
-            |> assign(:make_question_answer_answers, %{"question" => "", "answer" => ""})
-            |> assign(:show_hint, false)
-            |> assign(:meaning_error, !result.wrong_answer.meaning_correct)
-            |> assign(:reading_error, !result.wrong_answer.reading_correct)
-            |> assign(:correct_meaning, result.correct_meaning)
-            |> assign(:correct_reading, result.correct_reading)
-            |> assign(:next_step_after_correction, result.next_step)
-
-          {:noreply, socket}
-
-        {:completed, result} ->
-          Medoru.Learning.complete_lesson(
-            socket.assigns.current_scope.current_user.id,
-            socket.assigns.lesson.id
-          )
-
-          {:noreply,
-           socket
-           |> assign(:completed, true)
-           |> assign(:result, result)
-           |> push_navigate(to: ~p"/lessons/#{socket.assigns.lesson.id}/test/complete")}
-      end
+      submit_reading_text_default(socket, step)
     end
   end
 
@@ -608,6 +537,152 @@ defmodule MedoruWeb.LessonTestLive.Show do
      |> assign(:preview_kanji, nil)}
   end
 
+  # Meaning-first typed step: single input validated against the word text or reading.
+  defp submit_meaning_to_text(socket, step) do
+    answer = String.trim(socket.assigns.meaning_answer)
+
+    if answer == "" do
+      {:noreply, put_flash(socket, :error, gettext("Please enter an answer"))}
+    else
+      session = socket.assigns.session
+
+      case LessonTestSession.submit_meaning_to_text_answer(
+             session.id,
+             step.id,
+             answer,
+             time_spent_seconds: 15,
+             locale: socket.assigns.locale
+           ) do
+        {:correct, result} ->
+          socket =
+            socket
+            |> assign(:feedback, :correct)
+            |> assign(:session, result.session)
+            |> assign(:current_step, result.next_step)
+            |> assign(:session_state, LessonTestSession.get_session_state(result.session.id))
+            |> assign(:meaning_answer, "")
+            |> assign(:reading_answer, "")
+            |> assign(:show_hint, false)
+            |> assign(:meaning_error, false)
+            |> assign(:reading_error, false)
+            |> assign(:correct_meaning, nil)
+            |> assign(:correct_reading, nil)
+            |> assign(:next_step_after_correction, nil)
+
+          {:noreply, socket}
+
+        {:incorrect, result} ->
+          # Don't advance to next_step yet - show the correction first
+          socket =
+            socket
+            |> assign(:feedback, :incorrect)
+            |> assign(:session, result.session)
+            |> assign(:session_state, LessonTestSession.get_session_state(result.session.id))
+            |> assign(:meaning_answer, "")
+            |> assign(:reading_answer, "")
+            |> assign(:show_hint, false)
+            |> assign(:meaning_error, false)
+            |> assign(:reading_error, false)
+            |> assign(:correct_meaning, result.correct_meaning)
+            |> assign(:correct_reading, result.correct_reading)
+            |> assign(:next_step_after_correction, result.next_step)
+
+          {:noreply, socket}
+
+        {:completed, result} ->
+          Medoru.Learning.complete_lesson(
+            socket.assigns.current_scope.current_user.id,
+            socket.assigns.lesson.id
+          )
+
+          {:noreply,
+           socket
+           |> assign(:completed, true)
+           |> assign(:result, result)
+           |> push_navigate(to: ~p"/lessons/#{socket.assigns.lesson.id}/test/complete")}
+      end
+    end
+  end
+
+  defp submit_reading_text_default(socket, step) do
+    is_kana_only = step.question_data["is_kana_only"] || false
+    meaning = String.trim(socket.assigns.meaning_answer)
+    reading = String.trim(socket.assigns.reading_answer)
+    # Validate inputs are not empty
+    if meaning == "" or (not is_kana_only and reading == "") do
+      {:noreply, put_flash(socket, :error, gettext("Please enter both meaning and reading"))}
+    else
+      session = socket.assigns.session
+
+      # Submit reading text answer with locale
+      locale = socket.assigns.locale
+
+      case LessonTestSession.submit_reading_text_answer(
+             session.id,
+             step.id,
+             meaning,
+             reading,
+             time_spent_seconds: 15,
+             locale: locale,
+             skip_reading: is_kana_only
+           ) do
+        {:correct, result} ->
+          socket =
+            socket
+            |> assign(:feedback, :correct)
+            |> assign(:session, result.session)
+            |> assign(:current_step, result.next_step)
+            |> assign(:session_state, LessonTestSession.get_session_state(result.session.id))
+            |> assign(:meaning_answer, "")
+            |> assign(:reading_answer, "")
+            |> assign(:grammar_pattern_answer, "")
+            |> assign(:make_question_answer_answers, %{"question" => "", "answer" => ""})
+            |> assign(:show_hint, false)
+            |> assign(:meaning_error, false)
+            |> assign(:reading_error, false)
+            |> assign(:correct_meaning, nil)
+            |> assign(:correct_reading, nil)
+            |> assign(:next_step_after_correction, nil)
+
+          {:noreply, socket}
+
+        {:incorrect, result} ->
+          # Don't advance to next_step yet - show the correction first
+          # Keep current_step as the one they got wrong so they can see the correct answer
+          # next_step will be assigned when they click Continue
+          socket =
+            socket
+            |> assign(:feedback, :incorrect)
+            |> assign(:session, result.session)
+            |> assign(:session_state, LessonTestSession.get_session_state(result.session.id))
+            |> assign(:meaning_answer, "")
+            |> assign(:reading_answer, "")
+            |> assign(:grammar_pattern_answer, "")
+            |> assign(:make_question_answer_answers, %{"question" => "", "answer" => ""})
+            |> assign(:show_hint, false)
+            |> assign(:meaning_error, !result.wrong_answer.meaning_correct)
+            |> assign(:reading_error, !result.wrong_answer.reading_correct)
+            |> assign(:correct_meaning, result.correct_meaning)
+            |> assign(:correct_reading, result.correct_reading)
+            |> assign(:next_step_after_correction, result.next_step)
+
+          {:noreply, socket}
+
+        {:completed, result} ->
+          Medoru.Learning.complete_lesson(
+            socket.assigns.current_scope.current_user.id,
+            socket.assigns.lesson.id
+          )
+
+          {:noreply,
+           socket
+           |> assign(:completed, true)
+           |> assign(:result, result)
+           |> push_navigate(to: ~p"/lessons/#{socket.assigns.lesson.id}/test/complete")}
+      end
+    end
+  end
+
   defp clear_feedback(socket) do
     socket
     |> assign(:feedback, nil)
@@ -730,7 +805,7 @@ defmodule MedoruWeb.LessonTestLive.Show do
                     <span>{gettext("Writing Challenge (5 points)")}</span>
                   </div>
                 <% else %>
-                  <% display = step_display_info(@current_step) %>
+                  <% display = step_display_info(@current_step, @locale) %>
                   <%= if display.label do %>
                     <div class="text-xs sm:text-sm text-secondary mb-3">
                       {display.label}
@@ -772,17 +847,65 @@ defmodule MedoruWeb.LessonTestLive.Show do
 
               <%!-- Reading Text Step --%>
               <%= if @current_step.question_type == :reading_text do %>
-                <MedoruWeb.LessonTestLive.ReadingTextComponent.reading_text_question
-                  step={@current_step}
-                  meaning_answer={@meaning_answer}
-                  reading_answer={@reading_answer}
-                  feedback={@feedback}
-                  show_hint={@show_hint}
-                  meaning_error={@meaning_error}
-                  reading_error={@reading_error}
-                  correct_meaning={@correct_meaning}
-                  correct_reading={@correct_reading}
-                />
+                <%= if @current_step.question_data["type"] == "meaning_to_text" do %>
+                  <div class="mb-6">
+                    <div class="text-xs sm:text-sm text-secondary mb-3">
+                      {gettext("Type the Japanese word for:")}
+                    </div>
+                    <h2 class="text-2xl sm:text-3xl font-bold text-primary text-center mb-4">
+                      {Content.localized_meaning_prompt(
+                        @current_step.question_data["word_id"] || @current_step.word_id,
+                        @locale,
+                        @current_step.question_data["meaning_indices"]
+                      ) || @current_step.question}
+                    </h2>
+                    <%= if is_nil(@feedback) do %>
+                      <form
+                        id="meaning-to-text-form"
+                        phx-submit="submit_reading_text"
+                        class="space-y-4"
+                      >
+                        <input
+                          type="text"
+                          name="meaning_answer"
+                          value={@meaning_answer}
+                          phx-change="update_meaning"
+                          class="input input-bordered w-full font-japanese text-lg"
+                          placeholder={gettext("Type the word or its reading...")}
+                        />
+                        <button
+                          type="submit"
+                          phx-click="submit_reading_text"
+                          disabled={@meaning_answer == ""}
+                          class="w-full sm:w-auto px-6 py-3 bg-primary text-primary-content rounded-xl font-medium hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors min-h-[48px]"
+                        >
+                          {gettext("Submit Answer")}
+                        </button>
+                      </form>
+                    <% end %>
+                    <%= if @feedback == :incorrect do %>
+                      <div class="bg-error/10 text-error rounded-lg p-3 mt-4">
+                        <p class="font-semibold">{gettext("Incorrect")}</p>
+                        <p>
+                          {gettext("Word:")} <span class="font-japanese">{@correct_meaning}</span>
+                          {gettext("Reading:")} <span class="font-japanese">{@correct_reading}</span>
+                        </p>
+                      </div>
+                    <% end %>
+                  </div>
+                <% else %>
+                  <MedoruWeb.LessonTestLive.ReadingTextComponent.reading_text_question
+                    step={@current_step}
+                    meaning_answer={@meaning_answer}
+                    reading_answer={@reading_answer}
+                    feedback={@feedback}
+                    show_hint={@show_hint}
+                    meaning_error={@meaning_error}
+                    reading_error={@reading_error}
+                    correct_meaning={@correct_meaning}
+                    correct_reading={@correct_reading}
+                  />
+                <% end %>
               <% end %>
 
               <%!-- Multichoice Step --%>
@@ -1052,10 +1175,15 @@ defmodule MedoruWeb.LessonTestLive.Show do
 
               <%= if @current_step.question_type == :reading_text && @feedback != :incorrect do %>
                 <% is_kana_only = @current_step.question_data["is_kana_only"] || false %>
+                <% is_meaning_to_text = @current_step.question_data["type"] == "meaning_to_text" %>
                 <button
+                  :if={not is_meaning_to_text}
                   type="button"
                   phx-click="submit_reading_text"
-                  disabled={@meaning_answer == "" or (not is_kana_only and @reading_answer == "")}
+                  disabled={
+                    @meaning_answer == "" or
+                      (not is_meaning_to_text and not is_kana_only and @reading_answer == "")
+                  }
                   class="w-full sm:w-auto px-6 py-3 bg-primary text-primary-content rounded-xl font-medium hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors min-h-[48px]"
                 >
                   {gettext("Submit Answer")}
@@ -1236,10 +1364,13 @@ defmodule MedoruWeb.LessonTestLive.Show do
   defp infer_question_type(_), do: nil
 
   # Returns display info for a step in word-set-test format
-  defp step_display_info(step) do
+  defp loaded_word(%{word: %Medoru.Content.Word{} = word}), do: word
+  defp loaded_word(_), do: nil
+
+  defp step_display_info(step, locale) do
     qd = step.question_data || %{}
     type = qd["type"] || infer_question_type(step.question)
-    word = step.word
+    word = loaded_word(step)
 
     case type do
       "word_to_meaning" ->
@@ -1279,11 +1410,26 @@ defmodule MedoruWeb.LessonTestLive.Show do
         }
 
       "meaning_to_word" ->
+        word_id = qd["word_id"] || step.word_id || (word && word.id)
+
+        prompt =
+          if word_id do
+            Content.localized_meaning_prompt(word_id, locale, qd["meaning_indices"])
+          end
+
         %{
-          label:
-            gettext("Which word means '%{meaning}'?",
-              meaning: qd["word_meaning"] || (word && word.meaning) || ""
-            ),
+          label: gettext("Which word means this?"),
+          main_text: prompt || qd["word_meaning"] || (word && word.meaning) || "",
+          main_class: "",
+          sub_text: nil,
+          sub_class: ""
+        }
+
+      "meaning_to_text" ->
+        # The prompt heading is rendered by the reading_text branch below so
+        # the word text is never shown as the question.
+        %{
+          label: nil,
           main_text: nil,
           main_class: "",
           sub_text: nil,

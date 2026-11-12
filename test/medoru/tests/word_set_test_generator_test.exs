@@ -124,6 +124,102 @@ defmodule Medoru.Tests.WordSetTestGeneratorTest do
     end
   end
 
+  describe "meaning_to_word steps" do
+    test "produces multichoice steps asking for the Japanese word" do
+      user = user_fixture()
+
+      words = [
+        word_fixture(%{text: "食べる", meaning: "to eat", reading: "たべる"}),
+        word_fixture(%{text: "飲む", meaning: "to drink", reading: "のむ"}),
+        word_fixture(%{text: "走る", meaning: "to run", reading: "はしる"}),
+        word_fixture(%{text: "見る", meaning: "to see", reading: "みる"})
+      ]
+
+      word_set = word_set_with_words(user, words)
+
+      {:ok, test} =
+        WordSets.create_practice_test(word_set,
+          step_types: [:meaning_to_word],
+          max_steps_per_word: 1
+        )
+
+      test = Tests.get_test!(test.id) |> Medoru.Repo.preload(:test_steps)
+      assert length(test.test_steps) == 4
+
+      Enum.each(test.test_steps, fn step ->
+        assert step.question_type == :multichoice
+        assert step.points == 0
+
+        word = Enum.find(words, &(&1.id == step.word_id))
+        assert step.correct_answer == "#{word.text} / #{word.reading}"
+
+        data = step.question_data
+        assert data["type"] == "meaning_to_word"
+        assert data["word_text"] == word.text
+        assert data["word_reading"] == word.reading
+        assert data["question_label"] == "word"
+        assert is_list(data["meaning_indices"])
+
+        assert step.question ==
+                 Medoru.Tests.MeaningSegments.pick_indices(word.meaning, data["meaning_indices"])
+                 |> Medoru.Tests.MeaningSegments.join()
+
+        assert is_list(step.options)
+        assert length(step.options) == 4
+        assert step.correct_answer in step.options
+
+        # option_word_ids is index-aligned with options and carries the correct word id
+        assert length(data["option_word_ids"]) == length(step.options)
+        correct_index = Enum.find_index(step.options, &(&1 == step.correct_answer))
+        assert Enum.at(data["option_word_ids"], correct_index) == word.id
+      end)
+    end
+  end
+
+  describe "meaning_to_text steps" do
+    test "produces typed steps with word_or_reading text mode and no options" do
+      user = user_fixture()
+
+      words = [
+        word_fixture(%{text: "食べる", meaning: "to eat", reading: "たべる"}),
+        word_fixture(%{text: "飲む", meaning: "to drink", reading: "のむ"})
+      ]
+
+      word_set = word_set_with_words(user, words)
+
+      {:ok, test} =
+        WordSets.create_practice_test(word_set,
+          step_types: [:meaning_to_text],
+          max_steps_per_word: 1
+        )
+
+      test = Tests.get_test!(test.id) |> Medoru.Repo.preload(:test_steps)
+      assert length(test.test_steps) == 2
+
+      Enum.each(test.test_steps, fn step ->
+        assert step.question_type == :reading_text
+        assert step.points == 0
+
+        word = Enum.find(words, &(&1.id == step.word_id))
+        assert step.correct_answer == "#{word.text} / #{word.reading}"
+
+        data = step.question_data
+        assert data["type"] == "meaning_to_text"
+        assert data["word_text"] == word.text
+        assert data["word_reading"] == word.reading
+        assert data["question_label"] == "word"
+        assert data["text_mode"] == "word_or_reading"
+        assert is_list(data["meaning_indices"])
+
+        assert step.question ==
+                 Medoru.Tests.MeaningSegments.pick_indices(word.meaning, data["meaning_indices"])
+                 |> Medoru.Tests.MeaningSegments.join()
+
+        assert step.options == []
+      end)
+    end
+  end
+
   describe "validate_step_types" do
     test "unknown step types are rejected" do
       user = user_fixture()

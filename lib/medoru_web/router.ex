@@ -9,8 +9,8 @@ defmodule MedoruWeb.Router do
     plug :protect_from_forgery
     plug :put_secure_browser_headers
     plug MedoruWeb.Plugs.NoCache
-    plug MedoruWeb.Plugs.SetLocale
     plug MedoruWeb.UserAuth, :fetch_current_user
+    plug MedoruWeb.Plugs.SetLocale
     plug MedoruWeb.Plugs.RequestLogger
   end
 

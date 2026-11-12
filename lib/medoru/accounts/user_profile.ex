@@ -14,6 +14,7 @@ defmodule Medoru.Accounts.UserProfile do
     field :timezone, :string, default: "UTC"
     field :daily_goal, :integer, default: 10
     field :theme, :string, default: "light"
+    field :locale, :string, default: "en"
     field :push_notifications_enabled, :boolean, default: false
     field :chat_enter_sends, :boolean, default: true
     field :convert_emoticons, :boolean, default: true
@@ -66,11 +67,13 @@ defmodule Medoru.Accounts.UserProfile do
       :notify_white_board,
       :notify_achievements,
       :is_public,
-      :safety
+      :safety,
+      :locale
     ])
     |> validate_length(:display_name, min: 1, max: 50)
     |> validate_length(:bio, max: 500)
     |> validate_inclusion(:theme, ["light", "dark", "system"])
+    |> validate_inclusion(:locale, ["en", "bg", "ja"])
     |> validate_number(:daily_goal, greater_than: 0, less_than_or_equal_to: 100)
     |> validate_number(:age, greater_than_or_equal_to: 1, less_than_or_equal_to: 120)
     |> validate_inclusion(:gender, @gender_values)
@@ -90,7 +93,9 @@ defmodule Medoru.Accounts.UserProfile do
       "word_to_reading",
       "reading_text",
       "image_to_meaning",
-      "kanji_writing"
+      "kanji_writing",
+      "meaning_to_word",
+      "meaning_to_text"
     ]
 
     if types == [] do

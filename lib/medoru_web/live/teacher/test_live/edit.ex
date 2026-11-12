@@ -14,6 +14,7 @@ defmodule MedoruWeb.Teacher.TestLive.Edit do
 
   alias Medoru.Tests
   alias Medoru.Tests.TestStep
+  alias Medoru.Tests.MeaningSegments
   alias Medoru.Content
   alias Medoru.Classrooms
   alias MedoruWeb.StepBuilderComponents
@@ -60,6 +61,8 @@ defmodule MedoruWeb.Teacher.TestLive.Edit do
           |> assign(:step_form, nil)
           |> assign(:step_changeset, nil)
           |> assign(:step_type, nil)
+          |> assign(:meaning_step_type, nil)
+          |> assign(:meaning_indices, [])
           |> assign(:available_words, [])
           |> assign(:word_search_query, "")
           |> assign(:available_kanji, [])
@@ -130,6 +133,8 @@ defmodule MedoruWeb.Teacher.TestLive.Edit do
         "match" -> {:match, "vocabulary"}
         "order" -> {:order, "vocabulary"}
         "reading_text" -> {:reading_text, "vocabulary"}
+        "meaning_to_word" -> {:multichoice, "vocabulary"}
+        "meaning_to_text" -> {:reading_text, "vocabulary"}
         "listening" -> {:listening, "listening"}
         # Grammar types
         "sentence_validation" -> {:sentence_validation, "grammar"}
@@ -185,10 +190,19 @@ defmodule MedoruWeb.Teacher.TestLive.Edit do
       |> assign(:use_default_meaning, true)
       |> assign(:custom_meaning, "")
       |> assign(:selected_word, nil)
+      |> assign(:meaning_step_type, nil)
+      |> assign(:meaning_indices, [])
       |> assign(:reading_answer, "")
       |> assign(:include_reading, true)
       # Reset grammar pattern elements for new step - BUG 1 FIX
       |> assign(:grammar_pattern_elements, [])
+
+    socket =
+      if type_str in ["meaning_to_word", "meaning_to_text"] do
+        assign(socket, :meaning_step_type, String.to_existing_atom(type_str))
+      else
+        socket
+      end
 
     {:noreply, socket}
   end
@@ -734,6 +748,10 @@ defmodule MedoruWeb.Teacher.TestLive.Edit do
         attrs
       end
 
+    # For meaning_to_word / meaning_to_text steps, derive question_data,
+    # question, and correct_answer from the attached word and selected segments
+    attrs = apply_meaning_step_attrs(socket, attrs)
+
     # For picture_multichoice, validate all words have images
     attrs_result =
       if step_type == :picture_multichoice do
@@ -804,6 +822,22 @@ defmodule MedoruWeb.Teacher.TestLive.Edit do
             []
         end
 
+      meaning_step_type =
+        case step.question_data do
+          %{"type" => "meaning_to_word"} -> :meaning_to_word
+          %{"type" => "meaning_to_text"} -> :meaning_to_text
+          _ -> nil
+        end
+
+      meaning_indices =
+        case step.question_data do
+          %{"meaning_indices" => indices} when is_list(indices) ->
+            indices |> Enum.uniq() |> Enum.sort()
+
+          _ ->
+            []
+        end
+
       {:noreply,
        socket
        |> assign(:show_step_form, true)
@@ -814,7 +848,9 @@ defmodule MedoruWeb.Teacher.TestLive.Edit do
        |> assign(:new_option_text, "")
        |> assign(:grammar_pattern_elements, grammar_pattern_elements)
        |> assign(:selected_word, nil)
-       |> assign(:selected_kanji, nil)}
+       |> assign(:selected_kanji, nil)
+       |> assign(:meaning_step_type, meaning_step_type)
+       |> assign(:meaning_indices, meaning_indices)}
     else
       {:noreply, put_flash(socket, :error, gettext("Step not found."))}
     end
@@ -936,6 +972,10 @@ defmodule MedoruWeb.Teacher.TestLive.Edit do
       else
         attrs
       end
+
+    # For meaning_to_word / meaning_to_text steps, derive question_data,
+    # question, and correct_answer from the attached word and selected segments
+    attrs = apply_meaning_step_attrs(socket, attrs)
 
     case Tests.update_test_step(step, attrs) do
       {:ok, _updated_step} ->
@@ -1319,19 +1359,28 @@ defmodule MedoruWeb.Teacher.TestLive.Edit do
     # Use localized meaning for the teacher's locale
     localized_meaning = Content.get_localized_meaning(word, socket.assigns.locale)
 
+    meaning_step_type = socket.assigns[:meaning_step_type]
+
     {question, correct_answer} =
-      case {step_type, search_type} do
-        {:multichoice, :reading} ->
-          # User searched by reading (hiragana/katakana)
-          {gettext("How do you read '%{meaning}'?", meaning: localized_meaning), word.text}
+      if meaning_step_type do
+        joined =
+          word.meaning |> MeaningSegments.split() |> MeaningSegments.join()
 
-        {:multichoice, _} ->
-          # User searched by meaning (English) or other
-          {gettext("What is the meaning of '%{word}'?", word: word.text), localized_meaning}
+        {if(joined == "", do: word.meaning, else: joined), "#{word.text} / #{word.reading}"}
+      else
+        case {step_type, search_type} do
+          {:multichoice, :reading} ->
+            # User searched by reading (hiragana/katakana)
+            {gettext("How do you read '%{meaning}'?", meaning: localized_meaning), word.text}
 
-        {_, _} ->
-          # Default for fill and other types
-          {gettext("What is the meaning of '%{word}'?", word: word.text), localized_meaning}
+          {:multichoice, _} ->
+            # User searched by meaning (English) or other
+            {gettext("What is the meaning of '%{word}'?", word: word.text), localized_meaning}
+
+          {_, _} ->
+            # Default for fill and other types
+            {gettext("What is the meaning of '%{word}'?", word: word.text), localized_meaning}
+        end
       end
 
     # For multichoice, ensure correct_answer is in options and trimmed
@@ -1396,6 +1445,19 @@ defmodule MedoruWeb.Teacher.TestLive.Edit do
         |> assign(:use_default_meaning, true)
         |> assign(:reading_answer, word.reading)
         |> assign(:include_reading, true)
+      else
+        socket
+      end
+
+    # For meaning_to_word / meaning_to_text, default to all meaning segments selected
+    socket =
+      if meaning_step_type do
+        segment_count = word.meaning |> MeaningSegments.split() |> length()
+
+        meaning_indices =
+          if segment_count > 0, do: Enum.to_list(0..(segment_count - 1)), else: []
+
+        assign(socket, :meaning_indices, meaning_indices)
       else
         socket
       end
@@ -1469,6 +1531,43 @@ defmodule MedoruWeb.Teacher.TestLive.Edit do
     {:noreply,
      socket
      |> assign(:custom_meaning, value)
+     |> assign(:step_changeset, changeset)
+     |> assign(:step_form, to_form(changeset, as: :step))}
+  end
+
+  @impl true
+  def handle_event("toggle_meaning_segment", %{"index" => index_str}, socket) do
+    index = String.to_integer(index_str)
+    current = socket.assigns[:meaning_indices] || []
+
+    meaning_indices =
+      if(index in current, do: current -- [index], else: [index | current])
+      |> Enum.uniq()
+      |> Enum.sort()
+
+    # Keep the question field in sync with the selected segments
+    changeset = socket.assigns.step_changeset
+
+    changeset =
+      case socket.assigns[:selected_word] do
+        nil ->
+          changeset
+
+        word ->
+          selected = MeaningSegments.pick_indices(word.meaning, meaning_indices)
+
+          question =
+            case selected do
+              [] -> word.meaning
+              _ -> MeaningSegments.join(selected)
+            end
+
+          Changeset.put_change(changeset, :question, question)
+      end
+
+    {:noreply,
+     socket
+     |> assign(:meaning_indices, meaning_indices)
      |> assign(:step_changeset, changeset)
      |> assign(:step_form, to_form(changeset, as: :step))}
   end
@@ -2951,7 +3050,8 @@ defmodule MedoruWeb.Teacher.TestLive.Edit do
                           </div>
                         <% end %>
 
-                        <%= if @step_type in [:multichoice, :picture_multichoice, :fill] do %>
+                        <%= if @step_type in [:multichoice, :picture_multichoice, :fill] or
+                            not is_nil(@meaning_step_type) do %>
                           <div>
                             <label class="block text-sm font-medium text-base-content mb-2">
                               <%= if @step_type == :picture_multichoice do %>
@@ -2996,6 +3096,35 @@ defmodule MedoruWeb.Teacher.TestLive.Edit do
                                     </div>
                                   </button>
                                 <% end %>
+                              </div>
+                            <% end %>
+
+                            <%!-- Meaning segment picker for meaning_to_word / meaning_to_text --%>
+                            <%= if not is_nil(@meaning_step_type) and not is_nil(@selected_word) do %>
+                              <div class="mt-4 bg-base-200 rounded-lg p-4">
+                                <p class="text-sm font-medium text-base-content mb-1">
+                                  {gettext("Meaning segments shown to students")}
+                                </p>
+                                <p class="text-xs text-secondary mb-3">
+                                  {gettext("The question will show only the selected segments.")}
+                                </p>
+                                <div class="space-y-2">
+                                  <%= for {segment, idx} <-
+                                      Enum.with_index(MeaningSegments.split(@selected_word.meaning)) do %>
+                                    <label class="flex items-center gap-2 cursor-pointer">
+                                      <input
+                                        type="checkbox"
+                                        phx-click="toggle_meaning_segment"
+                                        phx-value-index={idx}
+                                        checked={idx in (@meaning_indices || [])}
+                                        class="checkbox checkbox-sm checkbox-primary"
+                                      />
+                                      <span class="text-sm">
+                                        <span class="text-secondary">{idx + 1}.</span> {segment}
+                                      </span>
+                                    </label>
+                                  <% end %>
+                                </div>
                               </div>
                             <% end %>
 
@@ -4088,6 +4217,66 @@ defmodule MedoruWeb.Teacher.TestLive.Edit do
 
           {:error, error}
       end
+    end
+  end
+
+  # For meaning_to_word / meaning_to_text steps, build question_data, question,
+  # and correct_answer from the attached word and the selected meaning segments.
+  defp apply_meaning_step_attrs(socket, attrs) do
+    case {socket.assigns[:meaning_step_type], socket.assigns[:selected_word]} do
+      {meaning_type, word}
+      when meaning_type in [:meaning_to_word, :meaning_to_text] and not is_nil(word) ->
+        indices =
+          (socket.assigns[:meaning_indices] || [])
+          |> Enum.uniq()
+          |> Enum.sort()
+
+        selected = MeaningSegments.pick_indices(word.meaning, indices)
+
+        question =
+          case selected do
+            [] -> word.meaning
+            _ -> MeaningSegments.join(selected)
+          end
+
+        question_data = %{
+          "type" => Atom.to_string(meaning_type),
+          "word_id" => word.id,
+          "word_text" => word.text,
+          "word_reading" => word.reading,
+          "meaning_indices" => indices
+        }
+
+        question_data =
+          if meaning_type == :meaning_to_text do
+            Map.put(question_data, "text_mode", "word_or_reading")
+          else
+            question_data
+          end
+
+        correct_answer = "#{word.text} / #{word.reading}"
+
+        attrs =
+          attrs
+          |> Map.put("question_data", question_data)
+          |> Map.put("question", question)
+          |> Map.put("correct_answer", correct_answer)
+          |> Map.put("word_id", word.id)
+
+        if meaning_type == :meaning_to_word do
+          options = Map.get(attrs, "options") || []
+
+          if Enum.any?(options, fn opt -> String.trim(opt) == correct_answer end) do
+            attrs
+          else
+            Map.put(attrs, "options", options ++ [correct_answer])
+          end
+        else
+          attrs
+        end
+
+      _ ->
+        attrs
     end
   end
 

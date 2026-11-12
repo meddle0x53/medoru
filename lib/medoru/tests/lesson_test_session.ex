@@ -238,6 +238,127 @@ defmodule Medoru.Tests.LessonTestSession do
   end
 
   @doc """
+  Submits a meaning-first typed answer: a single input validated against the
+  word's text or reading. Mirrors `submit_reading_text_answer/4` queue
+  semantics, but correctness comes from `ReadingAnswerValidator.validate_text_or_reading/3`.
+  """
+  def submit_meaning_to_text_answer(session_id, step_id, answer, opts \\ []) do
+    time_spent = Keyword.get(opts, :time_spent_seconds, 0)
+
+    session =
+      TestSession
+      |> where([ts], ts.id == ^session_id)
+      |> preload(:test)
+      |> Repo.one!()
+
+    step = Repo.get!(TestStep, step_id)
+
+    word =
+      if step.word_id do
+        Medoru.Content.get_word!(step.word_id)
+      else
+        nil
+      end
+
+    is_correct =
+      if word do
+        Medoru.Tests.ReadingAnswerValidator.validate_text_or_reading(
+          word.text,
+          word.reading,
+          answer
+        )
+      else
+        false
+      end
+
+    metadata = session.metadata || %{}
+    answer_counter = metadata["answer_counter"] || 0
+    step_queue = metadata["step_queue"] || []
+
+    attrs = %{
+      "answer" => answer,
+      "time_spent_seconds" => time_spent,
+      "step_index" => answer_counter,
+      "is_correct" => is_correct,
+      "metadata" => %{"meaning_to_text" => true}
+    }
+
+    {:ok, _step_answer} = Tests.record_step_answer(session_id, step_id, attrs)
+
+    new_queue =
+      if is_correct do
+        List.delete(step_queue, step_id)
+      else
+        List.delete(step_queue, step_id) ++ [step_id]
+      end
+
+    wrong_count =
+      if is_correct do
+        metadata["wrong_answer_count"] || 0
+      else
+        (metadata["wrong_answer_count"] || 0) + 1
+      end
+
+    next_step_id = List.first(new_queue)
+
+    new_metadata = %{
+      metadata
+      | "step_queue" => new_queue,
+        "wrong_answer_count" => wrong_count,
+        "current_step_id" => next_step_id,
+        "answer_counter" => answer_counter + 1
+    }
+
+    total_steps = metadata["total_steps"] || length(step_queue)
+    progress_index = total_steps - length(new_queue)
+
+    updated_session =
+      if is_correct do
+        session
+        |> TestSession.progress_changeset(progress_index, session.time_spent_seconds + time_spent)
+        |> Ecto.Changeset.put_change(:metadata, new_metadata)
+        |> Repo.update!()
+      else
+        session
+        |> Ecto.Changeset.change(
+          metadata: new_metadata,
+          current_step_index: session.current_step_index + 1
+        )
+        |> Repo.update!()
+      end
+
+    if is_correct do
+      if new_queue == [] do
+        complete_lesson_test(updated_session, total_steps)
+      else
+        next_step = Repo.get!(TestStep, hd(new_queue))
+
+        {:correct,
+         %{
+           session: updated_session,
+           next_step: next_step,
+           remaining_count: length(new_queue),
+           total_steps: total_steps,
+           completed_steps: progress_index
+         }}
+      end
+    else
+      next_step = Repo.get!(TestStep, next_step_id || step_id)
+
+      {:incorrect,
+       %{
+         session: updated_session,
+         next_step: next_step,
+         remaining_count: length(new_queue),
+         wrong_answer: %{meaning_correct: false, reading_correct: false},
+         retry_position: length(new_queue),
+         correct_meaning: word && word.text,
+         correct_reading: word && word.reading
+       }}
+    end
+  end
+
+  @doc """
   Submits a single-field text answer for validation.
 
   Used by `meaning_only` and `reading_only` steps where only one of the

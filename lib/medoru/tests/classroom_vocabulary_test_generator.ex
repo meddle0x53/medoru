@@ -9,10 +9,13 @@ defmodule Medoru.Tests.ClassroomVocabularyTestGenerator do
   alias Medoru.Classrooms
   alias Medoru.Repo
   alias Medoru.Tests
+  alias Medoru.Tests.MeaningSegments
   alias Medoru.Tests.TestStepBuilder
 
   @allowed_step_types [
     :word_to_meaning,
+    :meaning_to_word,
+    :meaning_to_text,
     :word_to_reading,
     :reading_text,
     :image_to_meaning,
@@ -199,6 +202,51 @@ defmodule Medoru.Tests.ClassroomVocabularyTestGenerator do
     TestStepBuilder.add_distractors(step, word, distractor_count, distractor_pool,
       field: :meaning
     )
+  end
+
+  defp build_step(word, :meaning_to_word, distractor_count, distractor_pool) do
+    {segments, indices} = MeaningSegments.pick_random(word.meaning)
+
+    step =
+      base_step(word, 1)
+      |> Map.merge(%{
+        question: MeaningSegments.join(segments),
+        correct_answer: "#{word.text} / #{word.reading}",
+        hints: ["Pick the Japanese word that matches the meaning"],
+        question_data: %{
+          "type" => "meaning_to_word",
+          "word_text" => word.text,
+          "word_reading" => word.reading,
+          "meaning_indices" => indices,
+          "question_label" => "word"
+        }
+      })
+
+    TestStepBuilder.add_distractors(step, word, distractor_count, distractor_pool,
+      field: :text,
+      format_option: fn w -> "#{w.text} / #{w.reading}" end
+    )
+  end
+
+  defp build_step(word, :meaning_to_text, _distractor_count, _distractor_pool) do
+    {segments, indices} = MeaningSegments.pick_random(word.meaning)
+
+    base_step(word, 2)
+    |> Map.merge(%{
+      step_type: :vocabulary,
+      question_type: :reading_text,
+      question: MeaningSegments.join(segments),
+      correct_answer: "#{word.text} / #{word.reading}",
+      hints: ["Type the Japanese word or its hiragana reading"],
+      question_data: %{
+        "type" => "meaning_to_text",
+        "word_text" => word.text,
+        "word_reading" => word.reading,
+        "meaning_indices" => indices,
+        "question_label" => "word",
+        "text_mode" => "word_or_reading"
+      }
+    })
   end
 
   defp build_step(word, :word_to_reading, distractor_count, distractor_pool) do

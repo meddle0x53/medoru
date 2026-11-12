@@ -409,6 +409,15 @@ defmodule MedoruWeb.Admin.KanjiLive.Form do
             String.contains?(String.downcase(word.reading || ""), query_downcased) or
             String.contains?(String.downcase(word.meaning || ""), query_downcased)
         end)
+        |> Enum.sort_by(fn word ->
+          exact_match? =
+            query_downcased != "" and
+              (String.downcase(String.trim(word.text || "")) == query_downcased or
+                 String.downcase(String.trim(word.reading || "")) == query_downcased or
+                 String.downcase(String.trim(word.meaning || "")) == query_downcased)
+
+          if exact_match?, do: 0, else: 1
+        end)
         |> Enum.take(20)
       else
         []

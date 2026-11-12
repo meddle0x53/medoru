@@ -242,4 +242,38 @@ defmodule Medoru.Tests.ReadingAnswerValidatorTest do
       assert ReadingAnswerValidator.reading_hint("") == "..."
     end
   end
+
+  describe "validate_text_or_reading/3" do
+    test "accepts the exact word text" do
+      assert ReadingAnswerValidator.validate_text_or_reading("食べる", "たべる", "食べる")
+    end
+
+    test "accepts the reading" do
+      assert ReadingAnswerValidator.validate_text_or_reading("食べる", "たべる", "たべる")
+    end
+
+    test "accepts katakana input via kana normalization" do
+      assert ReadingAnswerValidator.validate_text_or_reading("食べる", "たべる", "タベる")
+    end
+
+    test "rejects a different word" do
+      refute ReadingAnswerValidator.validate_text_or_reading("食べる", "たべる", "食べます")
+    end
+
+    test "rejects empty answer" do
+      refute ReadingAnswerValidator.validate_text_or_reading("食べる", "たべる", "")
+      refute ReadingAnswerValidator.validate_text_or_reading("食べる", "たべる", "   ")
+    end
+
+    test "accepts any of multiple readings" do
+      assert ReadingAnswerValidator.validate_text_or_reading("四", "よん/し", "よん")
+      assert ReadingAnswerValidator.validate_text_or_reading("四", "よん/し", "し")
+      refute ReadingAnswerValidator.validate_text_or_reading("四", "よん/し", "よ")
+    end
+
+    test "accepts any of multiple text alternatives" do
+      assert ReadingAnswerValidator.validate_text_or_reading("此れ/これ", "これ", "此れ")
+      assert ReadingAnswerValidator.validate_text_or_reading("此れ/これ", "これ", "これ")
+    end
+  end
 end

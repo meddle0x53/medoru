@@ -2,13 +2,15 @@ defmodule MedoruWeb.DailyTestLiveTest do
   use MedoruWeb.ConnCase
 
   import Phoenix.LiveViewTest
+  import Ecto.Query
   import Medoru.AccountsFixtures
   import Medoru.ContentFixtures
 
+  alias Medoru.Content
   alias Medoru.Learning
-  # alias Medoru.Learning.DailyTestGenerator
   alias Medoru.Repo
   alias Medoru.Learning.ReviewSchedule
+  alias Medoru.Tests
 
   describe "mount" do
     test "shows daily test when user has learned words", %{conn: conn} do
@@ -193,6 +195,226 @@ defmodule MedoruWeb.DailyTestLiveTest do
       |> render_click()
 
       assert render(view) =~ "Correct!"
+    end
+  end
+
+  describe "meaning-first step types" do
+    setup %{conn: conn} do
+      user = user_fixture()
+      conn = log_in_user(conn, user)
+
+      word = word_fixture(%{text: "かぜみち", reading: "かぜみち", meaning: "wind path"})
+
+      {:ok, progress} = Learning.track_word_learned(user.id, word.id)
+
+      %ReviewSchedule{}
+      |> ReviewSchedule.changeset(%{
+        user_id: user.id,
+        user_progress_id: progress.id,
+        next_review_at: DateTime.utc_now() |> DateTime.add(-1, :day),
+        interval: 1,
+        ease_factor: 2.5,
+        repetitions: 0
+      })
+      |> Repo.insert!()
+
+      {:ok, daily_test} = Learning.get_or_create_daily_test(user)
+
+      # Replace generated steps with deterministic meaning-first steps
+      Repo.delete_all(from(s in Tests.TestStep, where: s.test_id == ^daily_test.id))
+
+      {:ok, _} =
+        Tests.create_test_steps(daily_test, [
+          %{
+            step_type: :vocabulary,
+            question_type: :multichoice,
+            question: "__MSG_WHAT_WORD_MEANS__|wind",
+            correct_answer: "#{word.text} / #{word.reading}",
+            options: ["#{word.text} / #{word.reading}", "あめみち / あめみち"],
+            word_id: word.id,
+            points: 1,
+            hints: [],
+            question_data: %{
+              "type" => "meaning_to_word",
+              "word_id" => word.id,
+              "word_text" => word.text,
+              "word_reading" => word.reading,
+              "meaning_indices" => [0],
+              "display_meaning" => "wind"
+            }
+          },
+          %{
+            step_type: :vocabulary,
+            question_type: :reading_text,
+            question: "__MSG_TYPE_WORD_FOR_MEANING__|wind",
+            correct_answer: "#{word.text} / #{word.reading}",
+            word_id: word.id,
+            points: 2,
+            hints: ["__MSG_TYPE_JAPANESE_WORD__"],
+            question_data: %{
+              "type" => "meaning_to_text",
+              "word_id" => word.id,
+              "word_text" => word.text,
+              "word_reading" => word.reading,
+              "meaning_indices" => [0],
+              "display_meaning" => "wind"
+            }
+          }
+        ])
+
+      %{conn: conn, user: user, word: word, daily_test: Tests.get_test!(daily_test.id)}
+    end
+
+    test "meaning_to_word renders the localized meaning prompt and text/reading options", %{
+      conn: conn,
+      word: word,
+      daily_test: daily_test
+    } do
+      {:ok, _view, html} = live(conn, ~p"/daily-test")
+
+      step =
+        Enum.find(daily_test.test_steps, &(&1.question_data["type"] == "meaning_to_word"))
+
+      expected_prompt =
+        Content.localized_meaning_prompt(
+          step.question_data["word_id"],
+          "en",
+          step.question_data["meaning_indices"]
+        )
+
+      assert expected_prompt
+      assert html =~ expected_prompt
+      # options are displayed as "text / reading"
+      assert html =~ "#{word.text} / #{word.reading}"
+    end
+
+    test "meaning_to_word grades the correct option as correct", %{
+      conn: conn,
+      daily_test: daily_test
+    } do
+      {:ok, view, _html} = live(conn, ~p"/daily-test")
+
+      step =
+        Enum.find(daily_test.test_steps, &(&1.question_data["type"] == "meaning_to_word"))
+
+      view
+      |> element("button[phx-value-answer='#{step.correct_answer}']")
+      |> render_click()
+
+      view
+      |> element("button", "Submit Answer")
+      |> render_click()
+
+      assert render(view) =~ "Correct!"
+    end
+
+    test "meaning_to_text accepts the word text and records a correct answer", %{
+      conn: conn,
+      user: user,
+      word: word,
+      daily_test: daily_test
+    } do
+      {:ok, view, _html} = live(conn, ~p"/daily-test")
+
+      mc_step =
+        Enum.find(daily_test.test_steps, &(&1.question_data["type"] == "meaning_to_word"))
+
+      view
+      |> element("button[phx-value-answer='#{mc_step.correct_answer}']")
+      |> render_click()
+
+      view
+      |> element("button", "Submit Answer")
+      |> render_click()
+
+      view
+      |> element("input[phx-change='update_answer']")
+      |> render_change(%{"text_answer" => word.text})
+
+      result =
+        view
+        |> element("button", "Submit Answer")
+        |> render_click()
+
+      # Correct answer on the final step completes the test and navigates away
+      assert {:error, {:live_redirect, %{to: "/daily-test/complete"}}} = result
+
+      session = Repo.get_by!(Tests.TestSession, user_id: user.id, test_id: daily_test.id)
+      session = Tests.get_test_session_with_answers(session.id)
+      answer = Enum.find(session.test_step_answers, &(&1.step_index == 1))
+      assert answer.is_correct
+    end
+
+    test "meaning_to_text submits via the form on Enter", %{
+      conn: conn,
+      user: user,
+      word: word,
+      daily_test: daily_test
+    } do
+      {:ok, view, _html} = live(conn, ~p"/daily-test")
+
+      mc_step =
+        Enum.find(daily_test.test_steps, &(&1.question_data["type"] == "meaning_to_word"))
+
+      view
+      |> element("button[phx-value-answer='#{mc_step.correct_answer}']")
+      |> render_click()
+
+      view
+      |> element("button", "Submit Answer")
+      |> render_click()
+
+      view
+      |> element("input[phx-change='update_answer']")
+      |> render_change(%{"text_answer" => word.text})
+
+      result =
+        view
+        |> element("form#meaning-to-text-form")
+        |> render_submit(%{})
+
+      # Correct answer on the final step completes the test and navigates away
+      assert {:error, {:live_redirect, %{to: "/daily-test/complete"}}} = result
+
+      session = Repo.get_by!(Tests.TestSession, user_id: user.id, test_id: daily_test.id)
+      session = Tests.get_test_session_with_answers(session.id)
+      answer = Enum.find(session.test_step_answers, &(&1.step_index == 1))
+      assert answer.is_correct
+    end
+
+    test "meaning_to_text records an incorrect answer for a wrong response", %{
+      conn: conn,
+      user: user,
+      daily_test: daily_test
+    } do
+      {:ok, view, _html} = live(conn, ~p"/daily-test")
+
+      mc_step =
+        Enum.find(daily_test.test_steps, &(&1.question_data["type"] == "meaning_to_word"))
+
+      view
+      |> element("button[phx-value-answer='#{mc_step.correct_answer}']")
+      |> render_click()
+
+      view
+      |> element("button", "Submit Answer")
+      |> render_click()
+
+      view
+      |> element("input[phx-change='update_answer']")
+      |> render_change(%{"text_answer" => "ちがうもの"})
+
+      html =
+        view
+        |> element("button", "Submit Answer")
+        |> render_click()
+
+      assert html =~ "Not quite"
+
+      session = Repo.get_by!(Tests.TestSession, user_id: user.id, test_id: daily_test.id)
+      session = Tests.get_test_session_with_answers(session.id)
+      answer = Enum.find(session.test_step_answers, &(&1.step_index == 1))
+      refute answer.is_correct
     end
   end
 

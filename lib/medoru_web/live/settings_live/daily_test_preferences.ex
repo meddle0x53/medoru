@@ -50,6 +50,18 @@ defmodule MedoruWeb.SettingsLive.DailyTestPreferences do
         label: gettext("Kanji Writing"),
         icon: "hero-paint-brush",
         description: gettext("Draw kanji with correct stroke order (3 points)")
+      },
+      %{
+        id: "meaning_to_word",
+        label: gettext("Meaning to Word"),
+        icon: "hero-arrows-right-left",
+        description: gettext("Show an English meaning and select the Japanese word")
+      },
+      %{
+        id: "meaning_to_text",
+        label: gettext("Meaning to Text"),
+        icon: "hero-keyboard",
+        description: gettext("Show an English meaning and type the Japanese word (2 points)")
       }
     ]
 

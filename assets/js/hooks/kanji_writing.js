@@ -1,6 +1,8 @@
 /**
  * Kanji Writing Hook with Stroke Validation
  */
+import { pathEndpoints } from "../lib/svg_path"
+import { classifyStrokePath, tolerancesForShape } from "../lib/stroke_shape.js"
 const KanjiWriting = {
   mounted() {
     console.log('=== KanjiWriting MOUNTED ===')
@@ -82,120 +84,9 @@ const KanjiWriting = {
 
     updateScoreDisplay()
 
-    // Parse SVG path - handles KanjiVG format with bezier curves
-    const parsePath = (pathStr) => {
-      const points = []
-      let currentX = 0, currentY = 0
-
-      // Normalize path
-      let normalized = pathStr
-        .replace(/([MmLlHhVvCcSsQqTtAaZz])/g, ' $1 ')
-        .replace(/,/g, ' ')
-
-      // Handle minus signs
-      for (let i = 0; i < 5; i++) {
-        normalized = normalized.replace(/(\d)(-)/g, '$1 $2')
-      }
-
-      normalized = normalized.replace(/\s+/g, ' ').trim()
-
-      const tokens = normalized.split(/\s+/)
-
-      for (let i = 0; i < tokens.length; i++) {
-        const cmd = tokens[i]
-        const type = cmd.toUpperCase()
-        const isRelative = cmd !== type
-
-        switch (type) {
-          case 'M':
-            if (i + 2 < tokens.length) {
-              currentX = parseFloat(tokens[++i])
-              currentY = parseFloat(tokens[++i])
-              points.push({x: currentX, y: currentY})
-            }
-            break
-          case 'L':
-            if (i + 2 < tokens.length) {
-              const x = parseFloat(tokens[++i])
-              const y = parseFloat(tokens[++i])
-              currentX = isRelative ? currentX + x : x
-              currentY = isRelative ? currentY + y : y
-              points.push({x: currentX, y: currentY})
-            }
-            break
-          case 'H':
-            if (i + 1 < tokens.length) {
-              const x = parseFloat(tokens[++i])
-              currentX = isRelative ? currentX + x : x
-              points.push({x: currentX, y: currentY})
-            }
-            break
-          case 'V':
-            if (i + 1 < tokens.length) {
-              const y = parseFloat(tokens[++i])
-              currentY = isRelative ? currentY + y : y
-              points.push({x: currentX, y: currentY})
-            }
-            break
-          case 'C':
-            if (i + 6 < tokens.length) {
-              i += 5
-              const x = parseFloat(tokens[i])
-              const y = parseFloat(tokens[++i])
-              currentX = isRelative ? currentX + x : x
-              currentY = isRelative ? currentY + y : y
-              points.push({x: currentX, y: currentY})
-            }
-            break
-          case 'S':
-            // Smooth cubic bezier - takes 4 params (cp2x, cp2y, x, y)
-            if (i + 4 < tokens.length) {
-              i += 3
-              const x = parseFloat(tokens[i])
-              const y = parseFloat(tokens[++i])
-              currentX = isRelative ? currentX + x : x
-              currentY = isRelative ? currentY + y : y
-              points.push({x: currentX, y: currentY})
-            }
-            break
-          case 'Q':
-            // Quadratic bezier - takes 4 params (cpx, cpy, x, y)
-            if (i + 4 < tokens.length) {
-              i += 3
-              const x = parseFloat(tokens[i])
-              const y = parseFloat(tokens[++i])
-              currentX = isRelative ? currentX + x : x
-              currentY = isRelative ? currentY + y : y
-              points.push({x: currentX, y: currentY})
-            }
-            break
-          case 'T':
-            // Smooth quadratic bezier - takes 2 params (x, y)
-            if (i + 2 < tokens.length) {
-              i += 1
-              const x = parseFloat(tokens[i])
-              const y = parseFloat(tokens[++i])
-              currentX = isRelative ? currentX + x : x
-              currentY = isRelative ? currentY + y : y
-              points.push({x: currentX, y: currentY})
-            }
-            break
-          case 'A':
-            // Arc - takes 7 params (rx, ry, rotation, large-arc, sweep, x, y)
-            if (i + 7 < tokens.length) {
-              i += 6
-              const x = parseFloat(tokens[i])
-              const y = parseFloat(tokens[++i])
-              currentX = isRelative ? currentX + x : x
-              currentY = isRelative ? currentY + y : y
-              points.push({x: currentX, y: currentY})
-            }
-            break
-        }
-      }
-
-      return points
-    }
+    // Parse SVG path into segment endpoints (shared tokenizer; handles
+    // implicit command repetitions and relative moveto — see lib/svg_path.js)
+    const parsePath = pathEndpoints
 
     // Analyze stroke properties
     const analyzeStroke = (points) => {
@@ -260,7 +151,7 @@ const KanjiWriting = {
       const points = parsePath(s.path)
       const analyzed = analyzeStroke(points)
       if (!analyzed) return null
-      return { ...analyzed, index: s.index, originalPath: s.path, originalPoints: points }
+      return { ...analyzed, index: s.index, originalPath: s.path, originalPoints: points, ...classifyStrokePath(s.path) }
     })
 
     const validExpectedCount = this._state.analyzedExpected.filter(s => s !== null).length
@@ -363,11 +254,19 @@ const KanjiWriting = {
         return { valid: false, reason: 'wrong_start_position' }
       }
 
+      // Shape-adaptive tolerances (shared table): hooks and 横撇 corners get
+      // a looser end gate, plain 撇 sweeps a little forgiving; straight
+      // strokes keep the strict 18/25 gates.
+      const { end: endTolerance, center: centerTolerance } = tolerancesForShape(
+        expected.shape,
+        expected.shapeDetail
+      )
+
       const endDist = Math.sqrt(
         Math.pow(drawn.end.x - expected.end.x, 2) +
         Math.pow(drawn.end.y - expected.end.y, 2)
       )
-      if (endDist > 18) {
+      if (endDist > endTolerance) {
         return { valid: false, reason: 'wrong_end_position' }
       }
 
@@ -375,7 +274,7 @@ const KanjiWriting = {
         Math.pow(drawn.centerX - expected.centerX, 2) +
         Math.pow(drawn.centerY - expected.centerY, 2)
       )
-      if (centerDist > 25) {
+      if (centerDist > centerTolerance) {
         return { valid: false, reason: 'wrong_position' }
       }
 

@@ -4,11 +4,14 @@ defmodule MedoruWeb.Plugs.SetLocale do
 
   Priority of locale detection:
   1. URL parameter (?locale=bg)
-  2. Cookie (medoru_locale)
-  3. Browser Accept-Language header
-  4. Default locale (en)
+  2. Logged-in user profile preference (user_profiles.locale)
+  3. Cookie (medoru_locale)
+  4. Browser Accept-Language header
+  5. Default locale (en)
 
-  Note: User preference storage is planned for future implementation.
+  When a logged-in user passes an explicit `?locale=` parameter that differs
+  from their stored profile preference, the profile is updated so the choice
+  persists across sessions and devices.
   """
 
   import Plug.Conn
@@ -24,11 +27,23 @@ defmodule MedoruWeb.Plugs.SetLocale do
   def call(conn, _opts) do
     locale = detect_locale(conn)
 
+    # Persist an explicit locale choice for logged-in users
+    maybe_persist_user_locale(conn, locale)
+
     # Set Gettext locale
     Gettext.put_locale(MedoruWeb.Gettext, locale)
 
     # Store locale in conn assigns for access in controllers/templates
     conn = assign(conn, :locale, locale)
+
+    # fetch_current_user already built current_scope with a nil locale
+    # (SetLocale runs after it in the pipeline) — refresh it.
+    conn =
+      if current_scope = conn.assigns[:current_scope] do
+        assign(conn, :current_scope, Map.put(current_scope, :locale, locale))
+      else
+        conn
+      end
 
     # Store locale in session for LiveViews
     conn = put_session(conn, :locale, locale)
@@ -67,11 +82,21 @@ defmodule MedoruWeb.Plugs.SetLocale do
     end
   end
 
+  defp maybe_persist_user_locale(conn, _locale) do
+    with user when not is_nil(user) <- conn.assigns[:current_user],
+         param when param in @supported_locales <- conn.params["locale"],
+         %{locale: stored} when stored != param <- user.profile do
+      Medoru.Accounts.update_profile(user.profile, %{locale: param})
+    else
+      _ -> :ok
+    end
+  end
+
   defp get_user_locale(conn) do
-    # User settings field not yet implemented - always return nil
-    # Future: check user profile or settings table for locale preference
-    _ = conn
-    nil
+    case conn.assigns[:current_user] do
+      %{profile: %{locale: locale}} when locale in @supported_locales -> locale
+      _ -> nil
+    end
   end
 
   defp accept_language_locale(conn) do

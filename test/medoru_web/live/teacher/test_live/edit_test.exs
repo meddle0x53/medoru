@@ -758,5 +758,235 @@ defmodule MedoruWeb.Teacher.TestLive.EditTest do
       # The toolbar shows "X steps • Y total points"
       assert html =~ "total points"
     end
+
+    test "meaning_to_word step: selects segments and saves question_data", %{
+      conn: conn,
+      teacher: teacher,
+      teacher_test: teacher_test
+    } do
+      word =
+        word_fixture(%{text: "あおい", meaning: "alpha / beta / gamma"})
+
+      {:ok, view, _html} =
+        conn
+        |> log_in_user(teacher)
+        |> live(~p"/teacher/tests/#{teacher_test.id}/edit")
+
+      # Selector offers the new cards
+      view
+      |> element("button", "Add First Step")
+      |> render_click()
+
+      assert has_element?(view, "button[phx-value-type='meaning_to_word']")
+      assert has_element?(view, "button[phx-value-type='meaning_to_text']")
+
+      view
+      |> element("button[phx-value-type='meaning_to_word']")
+      |> render_click()
+
+      # Attach a word
+      view
+      |> element("input[phx-keyup='search_words']")
+      |> render_keyup(%{value: "あおい"})
+
+      view
+      |> element("button[phx-click='select_word'][phx-value-word-id='#{word.id}']")
+      |> render_click()
+
+      # All three meaning segments are selected by default
+      for i <- 0..2 do
+        assert has_element?(
+                 view,
+                 "input[phx-click='toggle_meaning_segment'][phx-value-index='#{i}'][checked]"
+               )
+      end
+
+      # Toggle segments 0 and 2 off, leaving only segment 1
+      for i <- [0, 2] do
+        view
+        |> element("input[phx-click='toggle_meaning_segment'][phx-value-index='#{i}']")
+        |> render_click()
+      end
+
+      correct = "#{word.text} / #{word.reading}"
+
+      view
+      |> form("#step-form", %{
+        "step" => %{
+          "question" => "ignored at save",
+          "correct_answer" => "ignored at save",
+          "options" => Enum.join([correct, "opt1", "opt2", "opt3"], "\n")
+        }
+      })
+      |> render_submit()
+
+      assert render(view) =~ "Step added successfully"
+
+      step = teacher_test.id |> Tests.list_test_steps() |> hd()
+      assert step.question_type == :multichoice
+      assert step.question == "beta"
+      assert step.correct_answer == correct
+      assert step.word_id == word.id
+      assert step.options |> Enum.map(&String.trim/1) |> Enum.member?(correct)
+
+      assert step.question_data["type"] == "meaning_to_word"
+      assert step.question_data["word_id"] == word.id
+      assert step.question_data["word_text"] == word.text
+      assert step.question_data["word_reading"] == word.reading
+      assert step.question_data["meaning_indices"] == [1]
+    end
+
+    test "meaning_to_text step: saves all segments and text_mode by default", %{
+      conn: conn,
+      teacher: teacher,
+      teacher_test: teacher_test
+    } do
+      word =
+        word_fixture(%{text: "くろい", meaning: "alpha / beta / gamma"})
+
+      {:ok, view, _html} =
+        conn
+        |> log_in_user(teacher)
+        |> live(~p"/teacher/tests/#{teacher_test.id}/edit")
+
+      view
+      |> element("button", "Add First Step")
+      |> render_click()
+
+      view
+      |> element("button[phx-value-type='meaning_to_text']")
+      |> render_click()
+
+      view
+      |> element("input[phx-keyup='search_words']")
+      |> render_keyup(%{value: "くろい"})
+
+      view
+      |> element("button[phx-click='select_word'][phx-value-word-id='#{word.id}']")
+      |> render_click()
+
+      correct = "#{word.text} / #{word.reading}"
+
+      view
+      |> form("#step-form", %{
+        "step" => %{
+          "question" => "ignored at save",
+          "correct_answer" => "ignored at save"
+        }
+      })
+      |> render_submit()
+
+      assert render(view) =~ "Step added successfully"
+
+      step = teacher_test.id |> Tests.list_test_steps() |> hd()
+      assert step.question_type == :reading_text
+      assert step.question == "alpha / beta / gamma"
+      assert step.correct_answer == correct
+      assert step.word_id == word.id
+
+      assert step.question_data["type"] == "meaning_to_text"
+      assert step.question_data["word_text"] == word.text
+      assert step.question_data["word_reading"] == word.reading
+      assert step.question_data["meaning_indices"] == [0, 1, 2]
+      assert step.question_data["text_mode"] == "word_or_reading"
+    end
+
+    test "meaning_to_word step: injects correct answer into options when missing", %{
+      conn: conn,
+      teacher: teacher,
+      teacher_test: teacher_test
+    } do
+      word =
+        word_fixture(%{text: "あかい", meaning: "alpha / beta / gamma"})
+
+      {:ok, view, _html} =
+        conn
+        |> log_in_user(teacher)
+        |> live(~p"/teacher/tests/#{teacher_test.id}/edit")
+
+      view
+      |> element("button", "Add First Step")
+      |> render_click()
+
+      view
+      |> element("button[phx-value-type='meaning_to_word']")
+      |> render_click()
+
+      view
+      |> element("input[phx-keyup='search_words']")
+      |> render_keyup(%{value: "あかい"})
+
+      view
+      |> element("button[phx-click='select_word'][phx-value-word-id='#{word.id}']")
+      |> render_click()
+
+      correct = "#{word.text} / #{word.reading}"
+
+      view
+      |> form("#step-form", %{
+        "step" => %{
+          "question" => "ignored at save",
+          "correct_answer" => "ignored at save",
+          "options" => Enum.join(["opt1", "opt2", "opt3"], "\n")
+        }
+      })
+      |> render_submit()
+
+      assert render(view) =~ "Step added successfully"
+
+      step = teacher_test.id |> Tests.list_test_steps() |> hd()
+      assert step.options |> Enum.map(&String.trim/1) |> Enum.member?(correct)
+    end
+
+    test "meaning_to_word step: does not duplicate correct answer already in options", %{
+      conn: conn,
+      teacher: teacher,
+      teacher_test: teacher_test
+    } do
+      word =
+        word_fixture(%{text: "しろい", meaning: "alpha / beta / gamma"})
+
+      {:ok, view, _html} =
+        conn
+        |> log_in_user(teacher)
+        |> live(~p"/teacher/tests/#{teacher_test.id}/edit")
+
+      view
+      |> element("button", "Add First Step")
+      |> render_click()
+
+      view
+      |> element("button[phx-value-type='meaning_to_word']")
+      |> render_click()
+
+      view
+      |> element("input[phx-keyup='search_words']")
+      |> render_keyup(%{value: "しろい"})
+
+      view
+      |> element("button[phx-click='select_word'][phx-value-word-id='#{word.id}']")
+      |> render_click()
+
+      correct = "#{word.text} / #{word.reading}"
+
+      view
+      |> form("#step-form", %{
+        "step" => %{
+          "question" => "ignored at save",
+          "correct_answer" => "ignored at save",
+          "options" => Enum.join([correct, "opt1", "opt2", "opt3"], "\n")
+        }
+      })
+      |> render_submit()
+
+      assert render(view) =~ "Step added successfully"
+
+      step = teacher_test.id |> Tests.list_test_steps() |> hd()
+
+      assert step.options
+             |> Enum.map(&String.trim/1)
+             |> Enum.filter(&(&1 == correct))
+             |> length() == 1
+    end
   end
 end

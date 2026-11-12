@@ -1,4 +1,6 @@
 import { GAME_CONFIG } from '../config.js'
+import { pathEndpoints } from '../../lib/svg_path.js'
+import { classifyStrokePath, tolerancesForShape } from '../../lib/stroke_shape.js'
 
 /**
  * KanjiDrawingSystem - Replicates the KanjiWriting hook logic inside Phaser.
@@ -249,7 +251,7 @@ export default class KanjiDrawingSystem {
       const points = this._parsePath(s.path)
       const analyzed = this._analyzeStroke(points)
       if (!analyzed) return null
-      return { ...analyzed, index: s.index, originalPath: s.path, originalPoints: points }
+      return { ...analyzed, index: s.index, originalPath: s.path, originalPoints: points, ...classifyStrokePath(s.path) }
     })
 
     const validCount = this.state.analyzedExpected.filter(s => s !== null).length
@@ -496,113 +498,11 @@ export default class KanjiDrawingSystem {
     }
   }
 
-  // ---------- SVG Path Parsing (exact same as kanji_writing.js) ----------
+  // ---------- SVG Path Parsing (shared tokenizer; handles implicit
+  // command repetitions and relative moveto — see lib/svg_path.js) ----------
 
   _parsePath(pathStr) {
-    const points = []
-    let currentX = 0, currentY = 0
-
-    let normalized = pathStr
-      .replace(/([MmLlHhVvCcSsQqTtAaZz])/g, ' $1 ')
-      .replace(/,/g, ' ')
-
-    for (let i = 0; i < 5; i++) {
-      normalized = normalized.replace(/(\d)(-)/g, '$1 $2')
-    }
-
-    normalized = normalized.replace(/\s+/g, ' ').trim()
-    const tokens = normalized.split(/\s+/)
-
-    for (let i = 0; i < tokens.length; i++) {
-      const cmd = tokens[i]
-      const type = cmd.toUpperCase()
-      const isRelative = cmd !== type
-
-      switch (type) {
-        case 'M':
-          if (i + 2 < tokens.length) {
-            currentX = parseFloat(tokens[++i])
-            currentY = parseFloat(tokens[++i])
-            points.push({ x: currentX, y: currentY })
-          }
-          break
-        case 'L':
-          if (i + 2 < tokens.length) {
-            const x = parseFloat(tokens[++i])
-            const y = parseFloat(tokens[++i])
-            currentX = isRelative ? currentX + x : x
-            currentY = isRelative ? currentY + y : y
-            points.push({ x: currentX, y: currentY })
-          }
-          break
-        case 'H':
-          if (i + 1 < tokens.length) {
-            const x = parseFloat(tokens[++i])
-            currentX = isRelative ? currentX + x : x
-            points.push({ x: currentX, y: currentY })
-          }
-          break
-        case 'V':
-          if (i + 1 < tokens.length) {
-            const y = parseFloat(tokens[++i])
-            currentY = isRelative ? currentY + y : y
-            points.push({ x: currentX, y: currentY })
-          }
-          break
-        case 'C':
-          if (i + 6 < tokens.length) {
-            i += 5
-            const x = parseFloat(tokens[i])
-            const y = parseFloat(tokens[++i])
-            currentX = isRelative ? currentX + x : x
-            currentY = isRelative ? currentY + y : y
-            points.push({ x: currentX, y: currentY })
-          }
-          break
-        case 'S':
-          if (i + 4 < tokens.length) {
-            i += 3
-            const x = parseFloat(tokens[i])
-            const y = parseFloat(tokens[++i])
-            currentX = isRelative ? currentX + x : x
-            currentY = isRelative ? currentY + y : y
-            points.push({ x: currentX, y: currentY })
-          }
-          break
-        case 'Q':
-          if (i + 4 < tokens.length) {
-            i += 3
-            const x = parseFloat(tokens[i])
-            const y = parseFloat(tokens[++i])
-            currentX = isRelative ? currentX + x : x
-            currentY = isRelative ? currentY + y : y
-            points.push({ x: currentX, y: currentY })
-          }
-          break
-        case 'T':
-          if (i + 2 < tokens.length) {
-            i += 1
-            const x = parseFloat(tokens[i])
-            const y = parseFloat(tokens[++i])
-            currentX = isRelative ? currentX + x : x
-            currentY = isRelative ? currentY + y : y
-            points.push({ x: currentX, y: currentY })
-          }
-          break
-        case 'A':
-          if (i + 7 < tokens.length) {
-            i += 6
-            const x = parseFloat(tokens[i])
-            const y = parseFloat(tokens[++i])
-            currentX = isRelative ? currentX + x : x
-            currentY = isRelative ? currentY + y : y
-            points.push({ x: currentX, y: currentY })
-          }
-          break
-      }
-    }
-
-    return points
+    return pathEndpoints(pathStr)
   }
 
   // ---------- Stroke Analysis (exact same as kanji_writing.js) ----------
@@ -697,11 +597,19 @@ export default class KanjiDrawingSystem {
       return { valid: false, reason: 'wrong_start_position' }
     }
 
+    // Shape-adaptive tolerances (shared table): hooks and 横撇 corners get
+    // a looser end gate, plain 撇 sweeps a little forgiving; straight strokes
+    // keep the strict 18/25 gates.
+    const { end: endTolerance, center: centerTolerance } = tolerancesForShape(
+      expected.shape,
+      expected.shapeDetail
+    )
+
     const endDist = Math.sqrt(
       Math.pow(drawn.end.x - expected.end.x, 2) +
       Math.pow(drawn.end.y - expected.end.y, 2)
     )
-    if (endDist > 18) {
+    if (endDist > endTolerance) {
       return { valid: false, reason: 'wrong_end_position' }
     }
 
@@ -709,7 +617,7 @@ export default class KanjiDrawingSystem {
       Math.pow(drawn.centerX - expected.centerX, 2) +
       Math.pow(drawn.centerY - expected.centerY, 2)
     )
-    if (centerDist > 25) {
+    if (centerDist > centerTolerance) {
       return { valid: false, reason: 'wrong_position' }
     }
 

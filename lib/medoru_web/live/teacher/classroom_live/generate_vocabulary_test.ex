@@ -417,6 +417,18 @@ defmodule MedoruWeb.Teacher.ClassroomLive.GenerateVocabularyTest do
         description: gettext("Show a Japanese word and select the hiragana reading")
       },
       %{
+        id: "meaning_to_word",
+        label: gettext("Meaning to Word"),
+        icon: "hero-arrow-uturn-left",
+        description: gettext("Show an English meaning and select the Japanese word")
+      },
+      %{
+        id: "meaning_to_text",
+        label: gettext("Meaning to Text"),
+        icon: "hero-keyboard",
+        description: gettext("Show an English meaning and type the Japanese word or reading")
+      },
+      %{
         id: "reading_text",
         label: gettext("Type Meaning & Reading"),
         icon: "hero-pencil",

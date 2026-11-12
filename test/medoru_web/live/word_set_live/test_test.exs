@@ -1,6 +1,7 @@
 defmodule MedoruWeb.WordSetLive.TestTest do
   use MedoruWeb.ConnCase, async: true
   import Phoenix.LiveViewTest
+  import Ecto.Query
   import Medoru.AccountsFixtures
   import Medoru.ContentFixtures
   import Medoru.LearningFixtures
@@ -312,6 +313,220 @@ defmodule MedoruWeb.WordSetLive.TestTest do
 
       # The click should be handled without error (even if no writing step was generated)
       assert result in [:ok, :error]
+    end
+  end
+
+  describe "Word Set Practice Test - meaning-first step types" do
+    setup %{conn: conn} do
+      user = user_fixture()
+      conn = log_in_user(conn, user)
+
+      word =
+        word_fixture(%{text: "かぜみち", reading: "かぜみち", meaning: "wind path"})
+
+      distractors =
+        ["あめみち", "ゆきみち"]
+        |> Enum.map(fn text ->
+          word_fixture(%{text: text, reading: text, meaning: "rain route"})
+        end)
+
+      word_set = word_set_fixture(%{user_id: user.id, name: "Meaning First Set"})
+
+      {:ok, _} = WordSets.add_word_to_set(word_set, word.id)
+      Enum.each(distractors, &WordSets.add_word_to_set(word_set, &1.id))
+
+      {:ok, test} =
+        WordSets.create_practice_test(word_set,
+          step_types: [:meaning_to_word],
+          max_steps_per_word: 1,
+          distractor_count: 2
+        )
+
+      %{
+        conn: conn,
+        user: user,
+        word: word,
+        word_set: WordSets.get_word_set!(word_set.id),
+        practice_test: test
+      }
+    end
+
+    test "meaning_to_word renders the localized meaning prompt instead of the word text", %{
+      conn: conn,
+      word: word,
+      word_set: word_set,
+      practice_test: test
+    } do
+      {:ok, _view, html} = live(conn, ~p"/words/sets/#{word_set.id}/test")
+
+      step =
+        test.id
+        |> Tests.get_test!()
+        |> Medoru.Repo.preload(:test_steps)
+        |> Map.get(:test_steps)
+        |> Enum.min_by(& &1.order_index)
+
+      expected_prompt =
+        Medoru.Content.localized_meaning_prompt(
+          step.word_id,
+          "en",
+          step.question_data["meaning_indices"]
+        )
+
+      assert expected_prompt
+      assert html =~ expected_prompt
+      assert html =~ "#{word.text} / #{word.reading}"
+    end
+
+    test "meaning_to_word grades the correct option as correct", %{
+      conn: conn,
+      word_set: word_set,
+      practice_test: test
+    } do
+      {:ok, view, _html} = live(conn, ~p"/words/sets/#{word_set.id}/test")
+
+      step =
+        test.id
+        |> Tests.get_test!()
+        |> Medoru.Repo.preload(:test_steps)
+        |> Map.get(:test_steps)
+        |> Enum.min_by(& &1.order_index)
+
+      view
+      |> element("button[phx-value-answer='#{step.correct_answer}']")
+      |> render_click()
+
+      html =
+        view
+        |> element("button[phx-click='submit_answer']")
+        |> render_click()
+
+      assert html =~ "Correct!"
+    end
+  end
+
+  describe "Word Set Practice Test - meaning_to_text" do
+    setup %{conn: conn} do
+      user = user_fixture()
+      conn = log_in_user(conn, user)
+
+      word = word_fixture(%{text: "かぜみち", reading: "かぜみち", meaning: "wind path"})
+      word_set = word_set_fixture(%{user_id: user.id, name: "Meaning To Text Set"})
+      {:ok, _} = WordSets.add_word_to_set(word_set, word.id)
+
+      {:ok, test} =
+        WordSets.create_practice_test(word_set,
+          step_types: [:meaning_to_text],
+          max_steps_per_word: 1
+        )
+
+      %{
+        conn: conn,
+        user: user,
+        word: word,
+        word_set: WordSets.get_word_set!(word_set.id),
+        practice_test: test
+      }
+    end
+
+    test "meaning_to_text renders a single input for the Japanese word", %{
+      conn: conn,
+      word_set: word_set
+    } do
+      {:ok, _view, html} = live(conn, ~p"/words/sets/#{word_set.id}/test")
+
+      assert html =~ "Type the Japanese word or its reading"
+      assert html =~ "meaning_answer"
+      refute html =~ "Reading (Hiragana)"
+    end
+
+    test "meaning_to_text accepts the word text and records a correct answer", %{
+      conn: conn,
+      user: user,
+      word: word,
+      word_set: word_set,
+      practice_test: test
+    } do
+      {:ok, view, _html} = live(conn, ~p"/words/sets/#{word_set.id}/test")
+
+      view
+      |> element("input[name='meaning_answer']")
+      |> render_keyup(%{"value" => word.text})
+
+      html =
+        view
+        |> element("button[phx-click='submit_reading_text']")
+        |> render_click()
+
+      assert html =~ "Correct!"
+
+      session =
+        Medoru.Tests.TestSession
+        |> where([s], s.user_id == ^user.id and s.test_id == ^test.id and s.status == :started)
+        |> Medoru.Repo.one!()
+
+      session = Tests.get_test_session_with_answers(session.id)
+      answer = Enum.find(session.test_step_answers, &(&1.step_index == 0))
+      assert answer.is_correct
+    end
+
+    test "meaning_to_text submits via the form on Enter", %{
+      conn: conn,
+      user: user,
+      word: word,
+      word_set: word_set,
+      practice_test: test
+    } do
+      {:ok, view, _html} = live(conn, ~p"/words/sets/#{word_set.id}/test")
+
+      view
+      |> element("input[name='meaning_answer']")
+      |> render_keyup(%{"value" => word.text})
+
+      html =
+        view
+        |> element("form#meaning-to-text-form")
+        |> render_submit(%{})
+
+      assert html =~ "Correct!"
+
+      session =
+        Medoru.Tests.TestSession
+        |> where([s], s.user_id == ^user.id and s.test_id == ^test.id and s.status == :started)
+        |> Medoru.Repo.one!()
+
+      session = Tests.get_test_session_with_answers(session.id)
+      answer = Enum.find(session.test_step_answers, &(&1.step_index == 0))
+      assert answer.is_correct
+    end
+
+    test "meaning_to_text records an incorrect answer for a wrong response", %{
+      conn: conn,
+      user: user,
+      word_set: word_set,
+      practice_test: test
+    } do
+      {:ok, view, _html} = live(conn, ~p"/words/sets/#{word_set.id}/test")
+
+      view
+      |> element("input[name='meaning_answer']")
+      |> render_keyup(%{"value" => "ちがうもの"})
+
+      html =
+        view
+        |> element("button[phx-click='submit_reading_text']")
+        |> render_click()
+
+      assert html =~ "Incorrect"
+
+      session =
+        Medoru.Tests.TestSession
+        |> where([s], s.user_id == ^user.id and s.test_id == ^test.id and s.status == :started)
+        |> Medoru.Repo.one!()
+
+      session = Tests.get_test_session_with_answers(session.id)
+      answer = Enum.find(session.test_step_answers, &(&1.step_index == 0))
+      refute answer.is_correct
     end
   end
 

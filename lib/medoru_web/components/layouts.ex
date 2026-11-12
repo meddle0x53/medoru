@@ -460,48 +460,19 @@ defmodule MedoruWeb.Layouts do
             </div>
 
             <%!-- Language Selector --%>
-            <li class="dropdown dropdown-end hidden sm:block">
-              <div
-                tabindex="0"
-                role="button"
-                class="btn btn-ghost btn-sm sm:btn-md btn-circle touch-target"
-                title={gettext("Language")}
-              >
-                <span class="text-lg">{locale_flag(@current_scope[:locale])}</span>
-              </div>
-              <ul
-                tabindex="0"
-                class="dropdown-content z-[1] menu p-2 shadow-lg bg-base-100 rounded-xl w-40 mt-2 border border-base-300"
-              >
-                <li class="menu-title px-3 py-2">
-                  <span class="text-xs text-base-content/50">{gettext("Language")}</span>
-                </li>
-                <li>
-                  <.link
-                    href={~p"/?locale=en"}
-                    class={locale_active_class(@current_scope[:locale], "en")}
-                  >
-                    <span>🇬🇧</span> {gettext("English")}
-                  </.link>
-                </li>
-                <li>
-                  <.link
-                    href={~p"/?locale=bg"}
-                    class={locale_active_class(@current_scope[:locale], "bg")}
-                  >
-                    <span>🇧🇬</span> {gettext("Bulgarian")}
-                  </.link>
-                </li>
-                <li>
-                  <.link
-                    href={~p"/?locale=ja"}
-                    class={locale_active_class(@current_scope[:locale], "ja")}
-                  >
-                    <span>🇯🇵</span> {gettext("Japanese")}
-                  </.link>
-                </li>
-              </ul>
-            </li>
+            <%= if @socket do %>
+              <.live_component
+                module={MedoruWeb.LanguageSelectorComponent}
+                id="language-selector"
+                current_scope={@current_scope}
+              />
+            <% else %>
+              <.language_selector_links
+                id="language-selector"
+                current_scope={@current_scope}
+                current_path={(assigns[:conn] && assigns[:conn].request_path) || "/"}
+              />
+            <% end %>
 
             <%!-- Notifications Dropdown --%>
             <%= if @socket do %>
@@ -721,48 +692,19 @@ defmodule MedoruWeb.Layouts do
             />
 
             <%!-- Language Selector for Anonymous Users --%>
-            <li class="dropdown dropdown-end hidden sm:block">
-              <div
-                tabindex="0"
-                role="button"
-                class="btn btn-ghost btn-sm sm:btn-md btn-circle touch-target"
-                title={gettext("Language")}
-              >
-                <span class="text-lg">{locale_flag(@current_scope[:locale])}</span>
-              </div>
-              <ul
-                tabindex="0"
-                class="dropdown-content z-[1] menu p-2 shadow-lg bg-base-100 rounded-xl w-40 mt-2 border border-base-300"
-              >
-                <li class="menu-title px-3 py-2">
-                  <span class="text-xs text-base-content/50">{gettext("Language")}</span>
-                </li>
-                <li>
-                  <.link
-                    href={~p"/?locale=en"}
-                    class={locale_active_class(@current_scope[:locale], "en")}
-                  >
-                    <span>🇬🇧</span> {gettext("English")}
-                  </.link>
-                </li>
-                <li>
-                  <.link
-                    href={~p"/?locale=bg"}
-                    class={locale_active_class(@current_scope[:locale], "bg")}
-                  >
-                    <span>🇧🇬</span> {gettext("Bulgarian")}
-                  </.link>
-                </li>
-                <li>
-                  <.link
-                    href={~p"/?locale=ja"}
-                    class={locale_active_class(@current_scope[:locale], "ja")}
-                  >
-                    <span>🇯🇵</span> {gettext("Japanese")}
-                  </.link>
-                </li>
-              </ul>
-            </li>
+            <%= if @socket do %>
+              <.live_component
+                module={MedoruWeb.LanguageSelectorComponent}
+                id="language-selector-anon"
+                current_scope={@current_scope}
+              />
+            <% else %>
+              <.language_selector_links
+                id="language-selector-anon"
+                current_scope={@current_scope}
+                current_path={(assigns[:conn] && assigns[:conn].request_path) || "/"}
+              />
+            <% end %>
 
             <%!-- Mobile Menu Toggle for Anonymous Users --%>
             <li class="md:hidden">
@@ -1076,6 +1018,45 @@ defmodule MedoruWeb.Layouts do
   end
 
   # Language selector helpers
+
+  # Server-rendered fallback (dead views have no LiveView socket): plain links
+  # to the CURRENT path with a locale param, so the user stays on the page.
+  attr :id, :string, required: true
+  attr :current_scope, :map, required: true
+  attr :current_path, :string, required: true
+
+  defp language_selector_links(assigns) do
+    ~H"""
+    <li id={@id} class="dropdown dropdown-end hidden sm:block">
+      <div
+        tabindex="0"
+        role="button"
+        class="btn btn-ghost btn-sm sm:btn-md btn-circle touch-target"
+        title={gettext("Language")}
+      >
+        <span class="text-lg">{locale_flag(@current_scope[:locale])}</span>
+      </div>
+      <ul
+        tabindex="0"
+        class="dropdown-content z-[1] menu p-2 shadow-lg bg-base-100 rounded-xl w-40 mt-2 border border-base-300"
+      >
+        <li class="menu-title px-3 py-2">
+          <span class="text-xs text-base-content/50">{gettext("Language")}</span>
+        </li>
+        <%= for {code, flag, label} <- [{"en", "🇬🇧", gettext("English")}, {"bg", "🇧🇬", gettext("Bulgarian")}, {"ja", "🇯🇵", gettext("Japanese")}] do %>
+          <li>
+            <.link
+              href={"#{@current_path}?locale=#{code}"}
+              class={locale_active_class(@current_scope[:locale], code)}
+            >
+              <span>{flag}</span> {label}
+            </.link>
+          </li>
+        <% end %>
+      </ul>
+    </li>
+    """
+  end
 
   defp locale_flag(nil), do: "🇬🇧"
   defp locale_flag("en"), do: "🇬🇧"

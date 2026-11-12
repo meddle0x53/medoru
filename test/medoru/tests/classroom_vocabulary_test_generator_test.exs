@@ -410,5 +410,115 @@ defmodule Medoru.Tests.ClassroomVocabularyTestGeneratorTest do
       unselected_meanings = Enum.map(words -- [selected_word], & &1.meaning)
       assert Enum.any?(step.options, &(&1 in unselected_meanings))
     end
+
+    test "generates meaning_to_word steps with distractor_pool: :selected", %{
+      classroom: classroom,
+      teacher: teacher,
+      words: words
+    } do
+      assert {:ok, test} =
+               ClassroomVocabularyTestGenerator.generate_test(
+                 classroom,
+                 words,
+                 teacher.id,
+                 step_types: [:meaning_to_word],
+                 max_times_per_word: 1,
+                 total_questions: 4
+               )
+
+      test = Tests.get_test!(test.id) |> Medoru.Repo.preload(:test_steps)
+      assert length(test.test_steps) == 4
+
+      Enum.each(test.test_steps, fn step ->
+        assert step.question_type == :multichoice
+        assert step.step_type == :vocabulary
+        assert step.points == 1
+
+        word = Enum.find(words, &(&1.id == step.word_id))
+        assert step.correct_answer == "#{word.text} / #{word.reading}"
+
+        data = step.question_data
+        assert data["type"] == "meaning_to_word"
+        assert data["word_text"] == word.text
+        assert data["word_reading"] == word.reading
+        assert data["question_label"] == "word"
+        assert is_list(data["meaning_indices"])
+
+        assert length(step.options) == 4
+        assert step.correct_answer in step.options
+        assert length(data["option_word_ids"]) == length(step.options)
+        correct_index = Enum.find_index(step.options, &(&1 == step.correct_answer))
+        assert Enum.at(data["option_word_ids"], correct_index) == word.id
+      end)
+    end
+
+    test "generates meaning_to_word steps with distractor_pool: :classroom", %{
+      classroom: classroom,
+      teacher: teacher,
+      words: words
+    } do
+      [selected_word | _] = words
+
+      assert {:ok, test} =
+               ClassroomVocabularyTestGenerator.generate_test(
+                 classroom,
+                 [selected_word],
+                 teacher.id,
+                 step_types: [:meaning_to_word],
+                 max_times_per_word: 1,
+                 total_questions: 1,
+                 distractor_pool: :classroom,
+                 all_classroom_words: words
+               )
+
+      test = Tests.get_test!(test.id) |> Medoru.Repo.preload(:test_steps)
+      assert length(test.test_steps) == 1
+      step = hd(test.test_steps)
+
+      assert length(step.options) == 4
+
+      unselected_options =
+        Enum.map(words -- [selected_word], &"#{&1.text} / #{&1.reading}")
+
+      assert Enum.any?(step.options, &(&1 in unselected_options))
+    end
+
+    test "generates meaning_to_text steps", %{
+      classroom: classroom,
+      teacher: teacher,
+      words: words
+    } do
+      assert {:ok, test} =
+               ClassroomVocabularyTestGenerator.generate_test(
+                 classroom,
+                 words,
+                 teacher.id,
+                 step_types: [:meaning_to_text],
+                 max_times_per_word: 1,
+                 total_questions: 4
+               )
+
+      test = Tests.get_test!(test.id) |> Medoru.Repo.preload(:test_steps)
+      assert length(test.test_steps) == 4
+
+      Enum.each(test.test_steps, fn step ->
+        assert step.question_type == :reading_text
+        assert step.step_type == :vocabulary
+        assert step.points == 2
+
+        word = Enum.find(words, &(&1.id == step.word_id))
+        assert step.correct_answer == "#{word.text} / #{word.reading}"
+
+        data = step.question_data
+        assert data["type"] == "meaning_to_text"
+        assert data["word_text"] == word.text
+        assert data["word_reading"] == word.reading
+        assert data["question_label"] == "word"
+        assert data["text_mode"] == "word_or_reading"
+        assert is_list(data["meaning_indices"])
+
+        assert step.options == []
+      end)
+    end
   end
 end

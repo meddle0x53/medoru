@@ -22,6 +22,7 @@ defmodule Medoru.Content do
   }
 
   alias Medoru.Learning.{UserEnglishProgress, UserProgress, WordSet}
+  alias Medoru.Tests.MeaningSegments
 
   # Kanji Functions
 
@@ -3389,6 +3390,40 @@ defmodule Medoru.Content do
   end
 
   def get_localized_meaning(%Word{} = word, _), do: word.meaning
+
+  @doc """
+  Builds a render-time meaning prompt for a word, optionally limited to the
+  given meaning segments (indices into the split localized meaning).
+
+  Returns the full localized meaning when `indices` is nil/empty or all out of
+  range. Returns nil if the word does not exist.
+
+  ## Examples
+
+      iex> localized_meaning_prompt(word.id, "bg", [0, 1])
+      "ям / консумирам"
+
+  """
+  def localized_meaning_prompt(word_id, locale, indices) do
+    case Repo.get(Word, word_id) do
+      nil ->
+        nil
+
+      %Word{} = word ->
+        localized = get_localized_meaning(word, locale)
+
+        if is_nil(indices) or indices == [] do
+          localized
+        else
+          segments = MeaningSegments.pick_indices(localized, indices)
+
+          case MeaningSegments.join(segments) do
+            "" -> localized
+            prompt -> prompt
+          end
+        end
+    end
+  end
 
   @doc """
   Gets the localized meanings for a kanji.

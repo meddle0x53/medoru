@@ -1380,4 +1380,207 @@ defmodule MedoruWeb.ClassroomLive.TestTest do
       assert html =~ "50%"
     end
   end
+
+  describe "meaning-first step types" do
+    setup do
+      teacher = user_fixture(%{email: "meaning_teacher@example.com"})
+      student = user_fixture(%{email: "meaning_student@example.com"})
+
+      {:ok, classroom} =
+        Classrooms.create_classroom(%{
+          name: "Meaning Classroom",
+          teacher_id: teacher.id
+        })
+
+      {:ok, membership} = Classrooms.apply_to_join(classroom.id, student.id)
+      {:ok, _} = Classrooms.approve_membership(membership)
+
+      word = word_fixture(%{text: "かさ", meaning: "umbrella holder", reading: "かさ"})
+      other_word = word_fixture(%{text: "ほん", meaning: "book thing", reading: "ほん"})
+      distractor1 = word_fixture(%{text: "くつ", meaning: "shoe thing", reading: "くつ"})
+      distractor2 = word_fixture(%{text: "めがね", meaning: "glasses thing", reading: "めがね"})
+
+      test =
+        test_fixture(%{
+          title: "Meaning Test",
+          created_by_id: teacher.id,
+          status: :published,
+          time_limit_seconds: 600,
+          total_points: 10
+        })
+
+      mc_step =
+        test_step_fixture(test, %{
+          question: "umbrella holder",
+          step_type: :vocabulary,
+          question_type: :multichoice,
+          correct_answer: "#{word.text} / #{word.reading}",
+          options: [
+            "#{word.text} / #{word.reading}",
+            "#{other_word.text} / #{other_word.reading}",
+            "#{distractor1.text} / #{distractor1.reading}",
+            "#{distractor2.text} / #{distractor2.reading}"
+          ],
+          points: 1,
+          word_id: word.id,
+          order_index: 0,
+          question_data: %{
+            "type" => "meaning_to_word",
+            "word_text" => word.text,
+            "word_reading" => word.reading,
+            "meaning_indices" => [],
+            "question_label" => "word"
+          }
+        })
+
+      text_step =
+        test_step_fixture(test, %{
+          question: "umbrella holder",
+          step_type: :vocabulary,
+          question_type: :reading_text,
+          correct_answer: "#{word.text} / #{word.reading}",
+          options: [],
+          points: 2,
+          word_id: word.id,
+          order_index: 1,
+          question_data: %{
+            "type" => "meaning_to_text",
+            "word_text" => word.text,
+            "word_reading" => word.reading,
+            "meaning_indices" => [],
+            "question_label" => "word",
+            "text_mode" => "word_or_reading"
+          }
+        })
+
+      {:ok, _classroom_test} =
+        Classrooms.publish_test_to_classroom(
+          classroom.id,
+          test.id,
+          teacher.id,
+          %{max_attempts: 1}
+        )
+
+      %{
+        student: student,
+        classroom: classroom,
+        test_resource: test,
+        word: word,
+        other_word: other_word,
+        mc_step: mc_step,
+        text_step: text_step
+      }
+    end
+
+    test "meaning_to_word renders the meaning prompt without leaking the word", %{
+      conn: conn,
+      student: student,
+      classroom: classroom,
+      test_resource: test_resource
+    } do
+      conn = log_in_user(conn, student)
+
+      {:ok, _view, html} =
+        live(conn, ~p"/classrooms/#{classroom.id}/tests/#{test_resource.id}")
+
+      assert html =~ "umbrella holder"
+      assert html =~ "かさ / かさ"
+      refute html =~ "Reading:"
+    end
+
+    test "meaning_to_word correct option is graded correct", %{
+      conn: conn,
+      student: student,
+      classroom: classroom,
+      test_resource: test_resource,
+      word: word,
+      mc_step: mc_step
+    } do
+      conn = log_in_user(conn, student)
+
+      {:ok, view, _html} =
+        live(conn, ~p"/classrooms/#{classroom.id}/tests/#{test_resource.id}")
+
+      view
+      |> form("form", %{answer: "#{word.text} / #{word.reading}"})
+      |> render_submit()
+
+      answer =
+        Medoru.Tests.TestStepAnswer
+        |> where([a], a.test_step_id == ^mc_step.id)
+        |> Medoru.Repo.one!()
+
+      assert answer.is_correct
+    end
+
+    test "meaning_to_text renders a single input and accepts the word text", %{
+      conn: conn,
+      student: student,
+      classroom: classroom,
+      test_resource: test_resource,
+      word: word,
+      text_step: text_step
+    } do
+      conn = log_in_user(conn, student)
+
+      {:ok, view, _html} =
+        live(conn, ~p"/classrooms/#{classroom.id}/tests/#{test_resource.id}")
+
+      # Answer the first (multichoice) step to reach the meaning_to_text step
+      view
+      |> form("form", %{answer: "#{word.text} / #{word.reading}"})
+      |> render_submit()
+
+      html = render(view)
+      assert html =~ "umbrella holder"
+      assert html =~ "Type the Japanese word"
+      refute html =~ "Reading (Hiragana)"
+
+      view
+      |> form("form", %{meaning_answer: word.text})
+      |> render_submit()
+
+      assert_redirected(view, ~p"/classrooms/#{classroom.id}/tests/#{test_resource.id}/results")
+
+      answer =
+        Medoru.Tests.TestStepAnswer
+        |> where([a], a.test_step_id == ^text_step.id)
+        |> Medoru.Repo.one!()
+
+      assert answer.is_correct
+      assert answer.answer == word.text
+    end
+
+    test "meaning_to_text wrong answer records is_correct false and shows feedback", %{
+      conn: conn,
+      student: student,
+      classroom: classroom,
+      test_resource: test_resource,
+      word: word,
+      text_step: text_step
+    } do
+      conn = log_in_user(conn, student)
+
+      {:ok, view, _html} =
+        live(conn, ~p"/classrooms/#{classroom.id}/tests/#{test_resource.id}")
+
+      view
+      |> form("form", %{answer: "#{word.text} / #{word.reading}"})
+      |> render_submit()
+
+      view
+      |> form("form", %{meaning_answer: "ほん"})
+      |> render_submit()
+
+      html = render(view)
+      assert html =~ "Incorrect"
+
+      answer =
+        Medoru.Tests.TestStepAnswer
+        |> where([a], a.test_step_id == ^text_step.id)
+        |> Medoru.Repo.one!()
+
+      refute answer.is_correct
+    end
+  end
 end

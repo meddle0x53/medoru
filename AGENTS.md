@@ -4,9 +4,10 @@
 
 ## Current State
 
-**Version**: 1.2.0 ✅ IMPLEMENTED  
-**Status**: 1.2.0 adds **text-type entries to the grammar library** — `grammar_definitions` now supports two entry types: `pattern` (existing, with "Try Your Own Example" validation) and `text` (informational entries with markdown `explanation_sections`, optional display-only `pattern_elements` that never validate, and optional examples). The public index has a type filter/badge; admin and moderator forms have an entry-type selector and a sections editor; the classroom "Copy To Grammar" action now also works for text lesson steps.  
-**Tests**: 1977 passing  
+**Version**: 1.6.0 ✅ IMPLEMENTED  
+**Status**: 1.6.0 adds **server-side locale persistence** — `user_profiles.locale` (en/bg/ja, default en) is applied by the `SetLocale` plug for logged-in users (priority: URL param → profile → cookie → Accept-Language → default), an explicit `?locale=` param is persisted to the profile, and the top-bar language selector is now a `LanguageSelectorComponent` that stays on the current page (persists + cookie + `window.location.reload` via `phx:reload_page`) instead of linking to `/`. The `/settings/language` page also persists to the profile. SetLocale now runs after `fetch_current_user` in the browser pipeline.  
+**Status (step types)**: 1.6.0 also adds two test step types — `meaning_to_word` (multichoice) and `meaning_to_text` (typed) — available in daily tests, word-set practice tests, classroom vocabulary tests, and the teacher step builder. Meanings are split into "/" segments by `Medoru.Tests.MeaningSegments`; generated tests pick 1–3 segments at random, while teachers pick segments literally via a multi-select in the step builder. Rendering/answering goes through `Content.localized_meaning_prompt/3`, `ReadingAnswerValidator`, and the updated `DailyTestLive`, `WordSetLive.Test`, `ClassroomLive.Test`, and `LessonTestLive.Show`.  
+**Tests**: see version history below
 **URL**: https://medoru.net
 
 ### Alpha Game Release Plan

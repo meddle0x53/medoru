@@ -93,6 +93,10 @@ window.addEventListener("phx:set_locale", e => {
   }
 })
 
+// Reload the current page in place (used after locale changes so the user
+// stays on the same page and the whole UI re-renders in the new locale)
+window.addEventListener("phx:reload_page", () => window.location.reload())
+
 // Handle data export download
 window.addEventListener("phx:download-data", e => {
   const { filename, content } = e.detail

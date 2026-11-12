@@ -34,11 +34,18 @@ defmodule MedoruWeb.SettingsLive.Language do
     if locale in ["en", "bg", "ja"] do
       Gettext.put_locale(MedoruWeb.Gettext, locale)
 
-      # Store locale in a cookie via push_event
+      # Persist to the user's profile when logged in
+      if user = socket.assigns.current_scope.current_user do
+        user.profile && Medoru.Accounts.update_profile(user.profile, %{locale: locale})
+      end
+
+      # Store locale in a cookie via push_event and reload so the whole
+      # page re-renders in the new locale (stays on the same page).
       {:noreply,
        socket
        |> assign(:current_locale, locale)
        |> push_event("set_locale", %{locale: locale})
+       |> push_event("reload_page", %{})
        |> put_flash(:info, gettext("Language updated successfully."))}
     else
       {:noreply, put_flash(socket, :error, gettext("Invalid language selection."))}

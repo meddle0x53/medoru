@@ -124,46 +124,86 @@
                 <% end %>
               </div>
             <% @current_step.question_type == :reading_text -> %>
-              <%!-- Reading Text Question --%>
-              <% translated_step = %{
-                @current_step
-                | question: translate_question(@current_step.question),
-                  hints: Enum.map(@current_step.hints, &translate_hint/1)
-              } %>
-              <% is_kana_only = @current_step.question_data["is_kana_only"] || false %>
-              <MedoruWeb.LessonTestLive.ReadingTextComponent.reading_text_question
-                step={translated_step}
-                meaning_answer={@meaning_answer}
-                reading_answer={@reading_answer}
-                feedback={@feedback}
-                show_hint={@show_hint}
-                meaning_error={@meaning_error}
-                reading_error={@reading_error}
-                correct_meaning={@correct_meaning}
-                correct_reading={@correct_reading}
-              />
+              <%= if @current_step.question_data["type"] == "meaning_to_text" do %>
+                <%!-- Meaning-to-text Question (type the Japanese word for a meaning) --%>
+                <div class="mb-4 sm:mb-6">
+                  <div class="text-xs sm:text-sm text-secondary mb-3 sm:mb-4">
+                    {translate_question(@current_step.question)}
+                  </div>
+                  <h2 class="text-2xl sm:text-3xl font-bold text-primary text-center mb-3 sm:mb-4">
+                    {Medoru.Content.localized_meaning_prompt(
+                      @current_step.question_data["word_id"] || @current_step.word_id,
+                      @locale,
+                      @current_step.question_data["meaning_indices"]
+                    ) || @current_step.question}
+                  </h2>
+                </div>
 
-              <%!-- Actions for Reading Text --%>
-              <div class="flex flex-col sm:flex-row gap-3 mt-4 sm:mt-6">
+                <%= if @feedback == :incorrect && @correct_meaning do %>
+                  <div class="bg-error/10 border border-error/20 rounded-xl p-4 mb-4">
+                    <div class="flex items-center gap-2 text-error mb-2">
+                      <.icon name="hero-x-circle" class="w-5 h-5" />
+                      <span class="font-medium">
+                        {gettext("Not quite. The correct answer is:")}
+                      </span>
+                    </div>
+                    <div class="pl-7 space-y-1">
+                      <div class="text-base-content">
+                        <span class="text-secondary">{gettext("Word:")}</span>
+                        <span class="font-medium font-japanese">{@correct_meaning}</span>
+                      </div>
+                      <div class="text-base-content">
+                        <span class="text-secondary">{gettext("Reading:")}</span>
+                        <span class="font-medium">{@correct_reading}</span>
+                      </div>
+                    </div>
+                  </div>
+                <% end %>
+
                 <%= if @feedback != :incorrect do %>
-                  <button
-                    type="button"
-                    phx-click="submit_reading_text"
-                    disabled={
-                      @meaning_answer == "" or (not is_kana_only and @reading_answer == "")
-                    }
-                    class="w-full sm:w-auto px-4 sm:px-6 py-3 bg-primary text-primary-content rounded-xl font-medium hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors min-h-[48px] order-1"
+                  <form
+                    id="meaning-to-text-form"
+                    phx-submit="submit_meaning_to_text"
+                    class="contents"
                   >
-                    {gettext("Submit Answer")}
-                  </button>
+                    <div class="space-y-4 mb-4 sm:mb-6">
+                      <input
+                        type="text"
+                        id="text_answer_input"
+                        name="text_answer"
+                        value={@text_answer}
+                        phx-change="update_answer"
+                        placeholder={gettext("Type the Japanese word or reading...")}
+                        disabled={@feedback == :incorrect}
+                        class={[
+                          "w-full px-4 py-3 rounded-xl border-2 bg-base-100 text-base-content placeholder:text-base-content/40",
+                          "focus:outline-none focus:ring-2 focus:ring-primary/20 transition-all",
+                          @feedback == :incorrect && "border-error bg-error/5",
+                          @feedback == :correct && "border-success bg-success/5",
+                          is_nil(@feedback) && "border-base-200 focus:border-primary"
+                        ]}
+                      />
+                    </div>
 
-                  <button
-                    type="button"
-                    phx-click="skip_question"
-                    class="w-full sm:w-auto sm:ml-auto px-4 py-3 bg-base-200 hover:bg-base-300 text-base-content rounded-xl transition-colors min-h-[48px] order-2 sm:order-3"
-                  >
-                    {gettext("Skip →")}
-                  </button>
+                    <div class="flex flex-col sm:flex-row gap-3">
+                      <button
+                        type="submit"
+                        phx-click="submit_meaning_to_text"
+                        disabled={@text_answer == ""}
+                        class="w-full sm:w-auto px-4 sm:px-6 py-3 bg-primary text-primary-content rounded-xl font-medium hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors min-h-[48px] order-1"
+                      >
+                        {gettext("Submit Answer")}
+                      </button>
+
+                      <button
+                        type="button"
+                        phx-click="skip_question"
+                        class="w-full sm:w-auto sm:ml-auto px-4 py-3 bg-base-200 hover:bg-base-300 text-base-content rounded-xl transition-colors min-h-[48px] order-2 sm:order-3"
+                      >
+                        {gettext("Skip →")}
+                      </button>
+                    </div>
+                  </form>
                 <% else %>
                   <button
                     type="button"
@@ -173,7 +213,58 @@
                     {gettext("Continue →")}
                   </button>
                 <% end %>
-              </div>
+              <% else %>
+                <%!-- Reading Text Question --%>
+                <% translated_step = %{
+                  @current_step
+                  | question: translate_question(@current_step.question),
+                    hints: Enum.map(@current_step.hints, &translate_hint/1)
+                } %>
+                <% is_kana_only = @current_step.question_data["is_kana_only"] || false %>
+                <MedoruWeb.LessonTestLive.ReadingTextComponent.reading_text_question
+                  step={translated_step}
+                  meaning_answer={@meaning_answer}
+                  reading_answer={@reading_answer}
+                  feedback={@feedback}
+                  show_hint={@show_hint}
+                  meaning_error={@meaning_error}
+                  reading_error={@reading_error}
+                  correct_meaning={@correct_meaning}
+                  correct_reading={@correct_reading}
+                />
+
+                <%!-- Actions for Reading Text --%>
+                <div class="flex flex-col sm:flex-row gap-3 mt-4 sm:mt-6">
+                  <%= if @feedback != :incorrect do %>
+                    <button
+                      type="button"
+                      phx-click="submit_reading_text"
+                      disabled={
+                        @meaning_answer == "" or (not is_kana_only and @reading_answer == "")
+                      }
+                      class="w-full sm:w-auto px-4 sm:px-6 py-3 bg-primary text-primary-content rounded-xl font-medium hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors min-h-[48px] order-1"
+                    >
+                      {gettext("Submit Answer")}
+                    </button>
+
+                    <button
+                      type="button"
+                      phx-click="skip_question"
+                      class="w-full sm:w-auto sm:ml-auto px-4 py-3 bg-base-200 hover:bg-base-300 text-base-content rounded-xl transition-colors min-h-[48px] order-2 sm:order-3"
+                    >
+                      {gettext("Skip →")}
+                    </button>
+                  <% else %>
+                    <button
+                      type="button"
+                      phx-click="continue_after_correction"
+                      class="px-4 sm:px-6 py-2.5 sm:py-3 bg-primary text-primary-content rounded-xl font-medium hover:bg-primary/90 transition-colors min-h-[44px]"
+                    >
+                      {gettext("Continue →")}
+                    </button>
+                  <% end %>
+                </div>
+              <% end %>
             <% @current_step.question_type == :fill -> %>
               <%= if @current_step.question_data["type"] == "japanese_to_meaning" do %>
                 <%!-- English meaning input question --%>
@@ -353,15 +444,29 @@
                 <div class="text-xs sm:text-sm text-secondary mb-3 sm:mb-4">
                   {translate_question(@current_step.question)}
                 </div>
-                <%= if english_multichoice? do %>
-                  <h2 class="text-2xl sm:text-3xl font-bold text-primary text-center mb-3 sm:mb-4">
-                    {localize_question_data_meaning(@current_step.question_data, @locale)}
-                  </h2>
-                <% else %>
-                  <h2 class="text-3xl sm:text-4xl font-bold text-primary font-japanese text-center mb-3 sm:mb-4">
-                    {@current_step.question_data["word_text"]}
-                  </h2>
-                <% end %>
+                <h2 class={[
+                  "font-bold text-primary text-center mb-3 sm:mb-4",
+                  @current_step.question_data["type"] == "meaning_to_word" and
+                    "text-2xl sm:text-3xl",
+                  english_multichoice? && "text-2xl sm:text-3xl",
+                  @current_step.question_data["type"] != "meaning_to_word" &&
+                    not english_multichoice? && "text-3xl sm:text-4xl font-japanese"
+                ]}>
+                  {cond do
+                    @current_step.question_data["type"] == "meaning_to_word" ->
+                      Medoru.Content.localized_meaning_prompt(
+                        @current_step.question_data["word_id"] || @current_step.word_id,
+                        @locale,
+                        @current_step.question_data["meaning_indices"]
+                      )
+
+                    english_multichoice? ->
+                      localize_question_data_meaning(@current_step.question_data, @locale)
+
+                    true ->
+                      @current_step.question_data["word_text"]
+                  end}
+                </h2>
                 <%!-- Show hint based on question type --%>
                 <%= if @current_step.question_data["type"] in ["word_to_meaning", "image_to_meaning"] do %>
                   <p class="text-center text-secondary text-sm sm:text-base">

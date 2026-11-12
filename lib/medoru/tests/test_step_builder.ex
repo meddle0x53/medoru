@@ -14,12 +14,17 @@ defmodule Medoru.Tests.TestStepBuilder do
   ## Options
     * `:field` - The field to extract from distractor words (:meaning, :reading, :text)
     * `:deduplicate` - Whether to deduplicate distractors by field value (default: true)
+    * `:format_option` - Function applied to each distractor word to build the
+      option string (default: `&Map.get(&1, field)`). Only distractors are
+      formatted; `step.correct_answer` must already be pre-formatted by the
+      caller when a custom `format_option` is used.
 
   Returns the step with `:options` and `:question_data` updated.
   """
   def add_distractors(step, correct_word, count, distractor_pool, opts \\ []) do
     field = Keyword.get(opts, :field, :meaning)
     deduplicate = Keyword.get(opts, :deduplicate, true)
+    format_option = Keyword.get(opts, :format_option, &Map.get(&1, field))
 
     distractors =
       distractor_pool
@@ -28,7 +33,7 @@ defmodule Medoru.Tests.TestStepBuilder do
         if deduplicate, do: Enum.uniq_by(pool, &Map.get(&1, field)), else: pool
       end)
       |> Enum.take_random(count)
-      |> Enum.map(&Map.get(&1, field))
+      |> Enum.map(format_option)
       |> Enum.reject(&is_nil/1)
       |> Enum.reject(&(&1 == step.correct_answer))
 

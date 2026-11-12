@@ -25,6 +25,18 @@ defmodule MedoruWeb.WordSetLive.TestConfig do
       description: "Show a Japanese word and select the hiragana reading"
     },
     %{
+      id: "meaning_to_word",
+      icon: "hero-arrow-uturn-left",
+      label: "Meaning to Word",
+      description: "Show an English meaning and select the Japanese word"
+    },
+    %{
+      id: "meaning_to_text",
+      icon: "hero-keyboard",
+      label: "Meaning to Text",
+      description: "Show an English meaning and type the Japanese word or reading"
+    },
+    %{
       id: "reading_text",
       icon: "hero-pencil",
       label: "Type Meaning & Reading",

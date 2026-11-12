@@ -209,75 +209,136 @@
               <% end %>
             <% @current_step.question_type == :reading_text -> %>
               <%!-- Reading Text Question --%>
-              <% is_kana_only = @current_step.question_data["is_kana_only"] || false %>
-              <% text_mode = @current_step.question_data["text_mode"] || "both" %>
-              <div class="mb-4 sm:mb-6">
-                <div class="text-xs sm:text-sm text-secondary mb-3 sm:mb-4">
-                  <%= cond do %>
-                    <% text_mode == "meaning" -> %>
-                      {gettext("Type the meaning:")}
-                    <% text_mode == "reading" -> %>
-                      {gettext("Type the reading:")}
-                    <% is_kana_only -> %>
-                      {gettext("Type the meaning:")}
-                    <% true -> %>
-                      {gettext("Type the meaning and reading:")}
-                  <% end %>
+              <%= if @current_step.question_data["type"] == "meaning_to_text" do %>
+                <%!-- Meaning-to-text Question (type the Japanese word for a meaning) --%>
+                <div class="mb-4 sm:mb-6">
+                  <div class="text-xs sm:text-sm text-secondary mb-3 sm:mb-4">
+                    {gettext("Type the Japanese word or its reading:")}
+                  </div>
+                  <h2 class="text-2xl sm:text-3xl font-bold text-primary text-center mb-1 sm:mb-2">
+                    {Content.localized_meaning_prompt(
+                      @current_step.question_data["word_id"] || @current_step.word_id,
+                      @locale,
+                      @current_step.question_data["meaning_indices"]
+                    ) || @current_step.question}
+                  </h2>
                 </div>
-                <h2 class="text-3xl sm:text-4xl font-bold text-primary font-japanese text-center mb-1 sm:mb-2">
-                  {@current_step.question}
-                </h2>
-                <%= if text_mode == "meaning" and @current_step.question_data["word_reading"] do %>
-                  <div class="text-lg text-secondary mt-1 text-center font-japanese">
-                    {@current_step.question_data["word_reading"]}
-                  </div>
-                <% end %>
-                <%= if text_mode == "reading" and @current_step.question_data["word_meaning"] do %>
-                  <div class="text-base text-secondary mt-1 text-center">
-                    {@current_step.question_data["word_meaning"]}
-                  </div>
-                <% end %>
-              </div>
 
-              <%!-- Answer Inputs (hidden once answered, so the next step's
-                  input mounts fresh and phx-mounted refocuses it) --%>
-              <%= if is_nil(@feedback) do %>
-                <div class="space-y-4 mb-4 sm:mb-6">
-                  <%= if text_mode == "reading" do %>
-                    <div>
-                      <label class="block text-sm font-medium text-base-content mb-2">
-                        {gettext("Reading (Hiragana)")}
-                      </label>
-                      <input
-                        type="text"
-                        name="reading_answer"
-                        value={@reading_answer}
-                        phx-keyup="update_reading"
-                        phx-debounce="200"
-                        phx-mounted={JS.focus()}
-                        placeholder={gettext("Enter the hiragana reading")}
-                        disabled={not is_nil(@feedback)}
-                        class="w-full px-4 py-3 rounded-xl border border-base-300 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all font-japanese disabled:opacity-60"
-                      />
+                <%= if is_nil(@feedback) do %>
+                  <form
+                    id="meaning-to-text-form"
+                    phx-submit="submit_reading_text"
+                    class="space-y-4"
+                  >
+                    <div class="space-y-4 mb-4 sm:mb-6">
+                      <div>
+                        <label class="block text-sm font-medium text-base-content mb-2">
+                          {gettext("Japanese word or reading")}
+                        </label>
+                        <input
+                          type="text"
+                          name="meaning_answer"
+                          value={@meaning_answer}
+                          phx-keyup="update_meaning"
+                          phx-debounce="200"
+                          phx-mounted={JS.focus()}
+                          placeholder={gettext("Enter the Japanese word or its reading")}
+                          disabled={not is_nil(@feedback)}
+                          class="w-full px-4 py-3 rounded-xl border border-base-300 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all font-japanese disabled:opacity-60"
+                        />
+                      </div>
+                    </div>
+
+                    <div class="flex flex-col sm:flex-row gap-3">
+                      <button
+                        type="submit"
+                        phx-click="submit_reading_text"
+                        disabled={@meaning_answer == ""}
+                        class="w-full sm:w-auto px-4 sm:px-6 py-3 bg-primary text-primary-content rounded-xl font-medium hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors min-h-[48px] order-1"
+                      >
+                        {gettext("Submit Answer")}
+                      </button>
+
+                      <button
+                        type="button"
+                        phx-click="skip_question"
+                        class="w-full sm:w-auto sm:ml-auto px-4 py-3 bg-base-200 hover:bg-base-300 text-base-content rounded-xl transition-colors min-h-[48px]"
+                      >
+                        {gettext("Skip →")}
+                      </button>
+                    </div>
+                  </form>
+                <% else %>
+                  <%= if @feedback == :correct do %>
+                    <div class="bg-success/10 rounded-xl p-4 sm:p-6 mb-4 sm:mb-6">
+                      <div class="flex items-center gap-3">
+                        <.icon name="hero-check-circle" class="w-8 h-8 text-success" />
+                        <div>
+                          <p class="font-semibold text-success text-lg">{gettext("Correct!")}</p>
+                          <p class="text-success-content/80">{gettext("Well done.")}</p>
+                        </div>
+                      </div>
                     </div>
                   <% else %>
-                    <div>
-                      <label class="block text-sm font-medium text-base-content mb-2">
-                        {gettext("Meaning (English)")}
-                      </label>
-                      <input
-                        type="text"
-                        name="meaning_answer"
-                        value={@meaning_answer}
-                        phx-keyup="update_meaning"
-                        phx-debounce="200"
-                        phx-mounted={JS.focus()}
-                        placeholder={gettext("Enter meaning...")}
-                        disabled={not is_nil(@feedback)}
-                        class="w-full px-4 py-3 rounded-xl border border-base-300 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all disabled:opacity-60"
-                      />
+                    <div class="bg-error/10 rounded-xl p-4 sm:p-6 mb-4 sm:mb-6">
+                      <div class="flex items-center gap-3">
+                        <.icon name="hero-x-circle" class="w-8 h-8 text-error" />
+                        <div>
+                          <p class="font-semibold text-error text-lg">{gettext("Incorrect")}</p>
+                          <p class="text-error-content/80">
+                            {gettext("The correct answer is: %{answer}",
+                              answer: @current_step.correct_answer
+                            )}
+                          </p>
+                        </div>
+                      </div>
                     </div>
-                    <%= if text_mode == "both" and not is_kana_only do %>
+                  <% end %>
+
+                  <button
+                    type="button"
+                    phx-click="next_step"
+                    class="w-full sm:w-auto px-4 sm:px-6 py-3 bg-primary text-primary-content rounded-xl font-medium hover:bg-primary/90 transition-colors min-h-[48px]"
+                  >
+                    {gettext("Continue →")}
+                  </button>
+                <% end %>
+              <% else %>
+                <% is_kana_only = @current_step.question_data["is_kana_only"] || false %>
+                <% text_mode = @current_step.question_data["text_mode"] || "both" %>
+                <div class="mb-4 sm:mb-6">
+                  <div class="text-xs sm:text-sm text-secondary mb-3 sm:mb-4">
+                    <%= cond do %>
+                      <% text_mode == "meaning" -> %>
+                        {gettext("Type the meaning:")}
+                      <% text_mode == "reading" -> %>
+                        {gettext("Type the reading:")}
+                      <% is_kana_only -> %>
+                        {gettext("Type the meaning:")}
+                      <% true -> %>
+                        {gettext("Type the meaning and reading:")}
+                    <% end %>
+                  </div>
+                  <h2 class="text-3xl sm:text-4xl font-bold text-primary font-japanese text-center mb-1 sm:mb-2">
+                    {@current_step.question}
+                  </h2>
+                  <%= if text_mode == "meaning" and @current_step.question_data["word_reading"] do %>
+                    <div class="text-lg text-secondary mt-1 text-center font-japanese">
+                      {@current_step.question_data["word_reading"]}
+                    </div>
+                  <% end %>
+                  <%= if text_mode == "reading" and @current_step.question_data["word_meaning"] do %>
+                    <div class="text-base text-secondary mt-1 text-center">
+                      {@current_step.question_data["word_meaning"]}
+                    </div>
+                  <% end %>
+                </div>
+
+                <%!-- Answer Inputs (hidden once answered, so the next step's
+                  input mounts fresh and phx-mounted refocuses it) --%>
+                <%= if is_nil(@feedback) do %>
+                  <div class="space-y-4 mb-4 sm:mb-6">
+                    <%= if text_mode == "reading" do %>
                       <div>
                         <label class="block text-sm font-medium text-base-content mb-2">
                           {gettext("Reading (Hiragana)")}
@@ -288,79 +349,114 @@
                           value={@reading_answer}
                           phx-keyup="update_reading"
                           phx-debounce="200"
-                          placeholder={gettext("Enter reading...")}
+                          phx-mounted={JS.focus()}
+                          placeholder={gettext("Enter the hiragana reading")}
                           disabled={not is_nil(@feedback)}
                           class="w-full px-4 py-3 rounded-xl border border-base-300 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all font-japanese disabled:opacity-60"
                         />
                       </div>
+                    <% else %>
+                      <div>
+                        <label class="block text-sm font-medium text-base-content mb-2">
+                          {gettext("Meaning (English)")}
+                        </label>
+                        <input
+                          type="text"
+                          name="meaning_answer"
+                          value={@meaning_answer}
+                          phx-keyup="update_meaning"
+                          phx-debounce="200"
+                          phx-mounted={JS.focus()}
+                          placeholder={gettext("Enter meaning...")}
+                          disabled={not is_nil(@feedback)}
+                          class="w-full px-4 py-3 rounded-xl border border-base-300 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all disabled:opacity-60"
+                        />
+                      </div>
+                      <%= if text_mode == "both" and not is_kana_only do %>
+                        <div>
+                          <label class="block text-sm font-medium text-base-content mb-2">
+                            {gettext("Reading (Hiragana)")}
+                          </label>
+                          <input
+                            type="text"
+                            name="reading_answer"
+                            value={@reading_answer}
+                            phx-keyup="update_reading"
+                            phx-debounce="200"
+                            placeholder={gettext("Enter reading...")}
+                            disabled={not is_nil(@feedback)}
+                            class="w-full px-4 py-3 rounded-xl border border-base-300 focus:border-primary focus:ring-2 focus:ring-primary/20 outline-none transition-all font-japanese disabled:opacity-60"
+                          />
+                        </div>
+                      <% end %>
                     <% end %>
-                  <% end %>
-                </div>
-              <% end %>
-
-              <%!-- Result / Actions for Reading Text --%>
-              <%= if is_nil(@feedback) do %>
-                <div class="flex flex-col sm:flex-row gap-3">
-                  <button
-                    type="button"
-                    phx-click="submit_reading_text"
-                    disabled={
-                      (text_mode == "reading" and @reading_answer == "") or
-                        (text_mode != "reading" and @meaning_answer == "")
-                    }
-                    class="w-full sm:w-auto px-4 sm:px-6 py-3 bg-primary text-primary-content rounded-xl font-medium hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors min-h-[48px] order-1"
-                  >
-                    {gettext("Submit Answer")}
-                  </button>
-
-                  <button
-                    type="button"
-                    phx-click="skip_question"
-                    class="w-full sm:w-auto sm:ml-auto px-4 py-3 bg-base-200 hover:bg-base-300 text-base-content rounded-xl transition-colors min-h-[48px]"
-                  >
-                    {gettext("Skip →")}
-                  </button>
-                </div>
-              <% else %>
-                <%= if @feedback == :correct do %>
-                  <div class="bg-success/10 rounded-xl p-4 sm:p-6 mb-4 sm:mb-6">
-                    <div class="flex items-center gap-3">
-                      <.icon name="hero-check-circle" class="w-8 h-8 text-success" />
-                      <div>
-                        <p class="font-semibold text-success text-lg">{gettext("Correct!")}</p>
-                        <p class="text-success-content/80">{gettext("Well done.")}</p>
-                      </div>
-                    </div>
-                  </div>
-                <% else %>
-                  <div class="bg-error/10 rounded-xl p-4 sm:p-6 mb-4 sm:mb-6">
-                    <div class="flex items-center gap-3">
-                      <.icon name="hero-x-circle" class="w-8 h-8 text-error" />
-                      <div>
-                        <p class="font-semibold text-error text-lg">{gettext("Incorrect")}</p>
-                        <p class="text-error-content/80">
-                          <%= if text_mode == "both" do %>
-                            {gettext("The correct answer is: %{answer}",
-                              answer: String.replace(@current_step.correct_answer, "|", " / ")
-                            )}
-                          <% else %>
-                            {gettext("The correct answer is: %{answer}",
-                              answer: @current_step.correct_answer
-                            )}
-                          <% end %>
-                        </p>
-                      </div>
-                    </div>
                   </div>
                 <% end %>
 
-                <button
-                  type="button"
-                  phx-click="next_step"
-                  class="w-full sm:w-auto px-4 sm:px-6 py-3 bg-primary text-primary-content rounded-xl font-medium hover:bg-primary/90 transition-colors min-h-[48px]"
-                >
-                  {gettext("Continue →")}
-                </button>
+                <%!-- Result / Actions for Reading Text --%>
+                <%= if is_nil(@feedback) do %>
+                  <div class="flex flex-col sm:flex-row gap-3">
+                    <button
+                      type="button"
+                      phx-click="submit_reading_text"
+                      disabled={
+                        (text_mode == "reading" and @reading_answer == "") or
+                          (text_mode != "reading" and @meaning_answer == "")
+                      }
+                      class="w-full sm:w-auto px-4 sm:px-6 py-3 bg-primary text-primary-content rounded-xl font-medium hover:bg-primary/90 disabled:opacity-50 disabled:cursor-not-allowed transition-colors min-h-[48px] order-1"
+                    >
+                      {gettext("Submit Answer")}
+                    </button>
+
+                    <button
+                      type="button"
+                      phx-click="skip_question"
+                      class="w-full sm:w-auto sm:ml-auto px-4 py-3 bg-base-200 hover:bg-base-300 text-base-content rounded-xl transition-colors min-h-[48px]"
+                    >
+                      {gettext("Skip →")}
+                    </button>
+                  </div>
+                <% else %>
+                  <%= if @feedback == :correct do %>
+                    <div class="bg-success/10 rounded-xl p-4 sm:p-6 mb-4 sm:mb-6">
+                      <div class="flex items-center gap-3">
+                        <.icon name="hero-check-circle" class="w-8 h-8 text-success" />
+                        <div>
+                          <p class="font-semibold text-success text-lg">{gettext("Correct!")}</p>
+                          <p class="text-success-content/80">{gettext("Well done.")}</p>
+                        </div>
+                      </div>
+                    </div>
+                  <% else %>
+                    <div class="bg-error/10 rounded-xl p-4 sm:p-6 mb-4 sm:mb-6">
+                      <div class="flex items-center gap-3">
+                        <.icon name="hero-x-circle" class="w-8 h-8 text-error" />
+                        <div>
+                          <p class="font-semibold text-error text-lg">{gettext("Incorrect")}</p>
+                          <p class="text-error-content/80">
+                            <%= if text_mode == "both" do %>
+                              {gettext("The correct answer is: %{answer}",
+                                answer: String.replace(@current_step.correct_answer, "|", " / ")
+                              )}
+                            <% else %>
+                              {gettext("The correct answer is: %{answer}",
+                                answer: @current_step.correct_answer
+                              )}
+                            <% end %>
+                          </p>
+                        </div>
+                      </div>
+                    </div>
+                  <% end %>
+
+                  <button
+                    type="button"
+                    phx-click="next_step"
+                    class="w-full sm:w-auto px-4 sm:px-6 py-3 bg-primary text-primary-content rounded-xl font-medium hover:bg-primary/90 transition-colors min-h-[48px]"
+                  >
+                    {gettext("Continue →")}
+                  </button>
+                <% end %>
               <% end %>
             <% true -> %>
               <%!-- Multichoice Question --%>
@@ -388,12 +484,21 @@
                   <% end %>
                 </div>
                 <h2 class="text-3xl sm:text-4xl font-bold text-primary font-japanese text-center mb-1 sm:mb-2">
-                  {word_text}
+                  <%= if question_data["type"] == "meaning_to_word" do %>
+                    {Content.localized_meaning_prompt(
+                      question_data["word_id"] || @current_step.word_id,
+                      @locale,
+                      question_data["meaning_indices"]
+                    ) || word_text}
+                  <% else %>
+                    {word_text}
+                  <% end %>
                 </h2>
                 <% word_reading =
                   question_data["word_reading"] ||
                     (@current_step.word && @current_step.word.reading) %>
-                <%= if word_reading && question_label != "reading" do %>
+                <%= if word_reading && question_label != "reading" &&
+                      question_data["type"] != "meaning_to_word" do %>
                   <p class="text-xl sm:text-2xl text-secondary/80 font-japanese text-center">
                     {word_reading}
                   </p>

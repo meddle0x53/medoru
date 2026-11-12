@@ -161,6 +161,9 @@ defmodule MedoruWeb.WordSetLive.Test do
     reading = String.trim(socket.assigns.reading_answer)
 
     cond do
+      question_data["type"] == "meaning_to_text" ->
+        submit_meaning_to_text(socket, step, meaning)
+
       text_mode == "meaning" ->
         submit_single_text(socket, step, meaning, :meaning)
 
@@ -291,6 +294,48 @@ defmodule MedoruWeb.WordSetLive.Test do
          |> assign(:feedback, nil)
          |> assign(:meaning_answer, "")
          |> assign(:reading_answer, "")}
+    end
+  end
+
+  defp submit_meaning_to_text(socket, step, answer) do
+    if answer == "" do
+      {:noreply, put_flash(socket, :error, gettext("Please enter an answer"))}
+    else
+      session = socket.assigns.session
+
+      word =
+        if step.word_id do
+          Content.get_word!(step.word_id)
+        else
+          nil
+        end
+
+      if word do
+        is_correct =
+          Medoru.Tests.ReadingAnswerValidator.validate_text_or_reading(
+            word.text,
+            word.reading,
+            answer
+          )
+
+        attrs = %{
+          answer: answer,
+          time_spent_seconds: 15,
+          step_index: session.current_step_index,
+          is_correct: is_correct
+        }
+
+        case Tests.record_step_answer(session.id, step.id, attrs) do
+          {:ok, _step_answer} ->
+            feedback = if is_correct, do: :correct, else: :incorrect
+            {:noreply, assign(socket, :feedback, feedback)}
+
+          {:error, _reason} ->
+            {:noreply, put_flash(socket, :error, gettext("Error recording answer"))}
+        end
+      else
+        {:noreply, put_flash(socket, :error, gettext("Error: word not found"))}
+      end
     end
   end
 

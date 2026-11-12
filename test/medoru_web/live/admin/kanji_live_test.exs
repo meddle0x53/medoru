@@ -330,6 +330,41 @@ defmodule MedoruWeb.Admin.KanjiLiveTest do
              ) == [word2.id, word1.id]
     end
 
+    test "ranks exact matches first in example word search results", %{conn: conn} do
+      kanji = kanji_with_readings_fixture()
+
+      substring_word =
+        word_for_kanji(kanji, %{
+          text: "#{kanji.character}子",
+          meaning: "daylight saving",
+          reading: "こ"
+        })
+
+      exact_word =
+        word_for_kanji(kanji, %{
+          text: "#{kanji.character}川",
+          meaning: "daylight",
+          reading: "かわ"
+        })
+
+      {:ok, view, _html} = live(conn, ~p"/admin/kanji/#{kanji.id}/edit")
+
+      view
+      |> form("#example-word-search", %{"query" => "daylight"})
+      |> render_change()
+
+      html = render(view)
+
+      result_ids =
+        Regex.scan(~r/phx-value-id="([^"]+)"/, html) |> Enum.map(&List.last/1)
+
+      assert to_string(exact_word.id) in result_ids
+      assert to_string(substring_word.id) in result_ids
+
+      assert Enum.find_index(result_ids, &(&1 == to_string(exact_word.id))) <
+               Enum.find_index(result_ids, &(&1 == to_string(substring_word.id)))
+    end
+
     test "removes an example word before saving", %{conn: conn} do
       kanji = kanji_with_readings_fixture()
       word1 = word_for_kanji(kanji, %{text: "一", meaning: "first", reading: "いち"})

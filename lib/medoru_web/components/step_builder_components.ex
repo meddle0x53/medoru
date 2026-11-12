@@ -259,6 +259,22 @@ defmodule MedoruWeb.StepBuilderComponents do
             points="5 points"
             on_select={@on_select}
           />
+          <.step_type_option
+            type={:meaning_to_word}
+            icon="hero-arrow-uturn-left"
+            title={gettext("Meaning to Word")}
+            description="Show meaning(s), student picks the Japanese word"
+            points="1 point"
+            on_select={@on_select}
+          />
+          <.step_type_option
+            type={:meaning_to_text}
+            icon="hero-keyboard"
+            title={gettext("Meaning to Text")}
+            description="Show meaning(s), student types the word or reading"
+            points="2 points"
+            on_select={@on_select}
+          />
         </div>
       </div>
 

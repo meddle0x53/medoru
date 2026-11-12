@@ -200,6 +200,32 @@ defmodule Medoru.Tests.ReadingAnswerValidator do
 
   def validate_reading(_, _), do: false
 
+  @doc """
+  Validates a user answer against either the word text (any `/`-separated
+  alternative, case-sensitive exact match with kana normalization on both
+  sides) or the reading via `validate_reading/2`.
+
+  Returns true when either the text or the reading matches.
+  """
+  def validate_text_or_reading(word_text, reading, user_answer)
+      when is_binary(word_text) and is_binary(user_answer) do
+    answer = String.trim(user_answer)
+
+    if answer == "" do
+      false
+    else
+      text_matches? =
+        word_text
+        |> String.split("/")
+        |> Enum.map(&String.trim/1)
+        |> Enum.any?(&(normalize_kana(&1) == normalize_kana(answer)))
+
+      text_matches? or validate_reading(reading, user_answer)
+    end
+  end
+
+  def validate_text_or_reading(_, _, _), do: false
+
   # Private functions
 
   # Normalize text for comparison (lowercase, trim)
@@ -237,7 +263,8 @@ defmodule Medoru.Tests.ReadingAnswerValidator do
   end
 
   # Normalize kana (convert to hiragana, standardize)
-  defp normalize_kana(text) do
+  @doc false
+  def normalize_kana(text) do
     text
     |> String.trim()
     |> to_hiragana()

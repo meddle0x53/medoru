@@ -435,6 +435,118 @@ defmodule Medoru.Learning.DailyTestGeneratorTest do
     end
   end
 
+  describe "meaning_to_word and meaning_to_text step types" do
+    setup do
+      user = user_fixture_with_profile()
+
+      target =
+        word_fixture(%{
+          text: "水",
+          reading: "みず",
+          meaning: "water / liquid"
+        })
+
+      distractors =
+        Enum.map(
+          [
+            %{text: "火", reading: "ひ", meaning: "fire"},
+            %{text: "木", reading: "き", meaning: "tree / wood"},
+            %{text: "金", reading: "かね", meaning: "money / gold"},
+            %{text: "土", reading: "つち", meaning: "earth / soil"}
+          ],
+          &word_fixture/1
+        )
+
+      {:ok, _} = Learning.track_word_learned(user.id, target.id)
+
+      Enum.each(distractors, fn word ->
+        {:ok, _} = Learning.track_word_learned(user.id, word.id)
+      end)
+
+      %{user: user, target: target}
+    end
+
+    test "meaning_to_word builds a multichoice step with word display options", %{
+      user: user,
+      target: target
+    } do
+      {:ok, _} = Medoru.Accounts.update_user_daily_test_preferences(user.id, ["meaning_to_word"])
+
+      assert {:ok, test} = DailyTestGenerator.generate_daily_test(user.id)
+
+      step =
+        Enum.find(
+          test.test_steps,
+          &(&1.question_data["type"] == "meaning_to_word" and &1.word_id == target.id)
+        )
+
+      assert step
+      assert step.question_type == :multichoice
+      assert step.points == 1
+      assert step.word_id == target.id
+
+      expected_answer = "#{target.text} / #{target.reading}"
+      assert step.correct_answer == expected_answer
+
+      indices = step.question_data["meaning_indices"]
+      assert is_list(indices)
+      assert length(indices) in 1..3
+
+      segments = Medoru.Tests.MeaningSegments.split(target.meaning)
+      assert Enum.all?(indices, &(&1 >= 0 and &1 < length(segments)))
+
+      assert step.question_data["word_text"] == target.text
+      assert step.question_data["word_reading"] == target.reading
+
+      assert step.question_data["display_meaning"] ==
+               indices
+               |> Enum.map(&Enum.at(segments, &1))
+               |> Medoru.Tests.MeaningSegments.join()
+
+      assert length(step.options) == 4
+      assert expected_answer in step.options
+      assert Enum.uniq(step.options) == step.options
+      assert Enum.all?(step.options, &String.contains?(&1, " / "))
+    end
+
+    test "meaning_to_text builds a typed step without options and 2 points", %{
+      user: user,
+      target: target
+    } do
+      {:ok, _} = Medoru.Accounts.update_user_daily_test_preferences(user.id, ["meaning_to_text"])
+
+      assert {:ok, test} = DailyTestGenerator.generate_daily_test(user.id)
+
+      step =
+        Enum.find(
+          test.test_steps,
+          &(&1.question_data["type"] == "meaning_to_text" and &1.word_id == target.id)
+        )
+
+      assert step
+      assert step.question_type == :reading_text
+      assert step.points == 2
+      assert step.word_id == target.id
+      assert step.correct_answer == "#{target.text} / #{target.reading}"
+      assert step.options in [nil, []]
+
+      indices = step.question_data["meaning_indices"]
+      assert is_list(indices)
+      assert length(indices) in 1..3
+
+      segments = Medoru.Tests.MeaningSegments.split(target.meaning)
+      assert Enum.all?(indices, &(&1 >= 0 and &1 < length(segments)))
+    end
+
+    test "user profile validation accepts the two new step type strings", %{user: user} do
+      assert {:ok, _profile} =
+               Medoru.Accounts.update_user_daily_test_preferences(user.id, [
+                 "meaning_to_word",
+                 "meaning_to_text"
+               ])
+    end
+  end
+
   describe "daily test size consistency by learned word count" do
     test "user with 20 learned words gets a 15-word daily test" do
       user = user_fixture()
